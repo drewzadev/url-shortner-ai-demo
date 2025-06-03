@@ -1,0 +1,85 @@
+# Coding Standards
+
+## Style
+- ES Modules with import/export syntax
+- No semicolons (StandardJS style)
+- Two spaces for indentation
+- Use const for immutable variables, let for mutable ones (no var)
+- Single quotes for strings
+- Prefix private methods with underscore (_privateMethod)
+
+## Error Handling
+- Use libs/attempt.mjs wrapper for async functions: const [error, result] = await __(asyncFunction())
+- Handle errors explicitly in each function
+- Log errors at appropriate levels
+Use the `attempt.mjs` wrapper for async functions, providing a cleaner error handling approach.
+
+The implementation is simple yet powerful:
+
+```javascript
+// libs/attempt.mjs
+export default async fn => {
+  try {
+    const result = await fn
+    return [null, result]
+  } catch (error) {
+    return [error, null]
+  }
+}
+```
+
+This creates a Go-like error handling pattern where functions return a tuple of `[error, result]`:
+
+```javascript
+// Usage example
+import __ from './libs/attempt.mjs'
+
+async function someFunction() {
+  // Using the attempt pattern
+  const [error, result] = await __(someAsyncOperation())
+
+  if (error) {
+    // Handle error case
+    this.logger.error(error)
+    throw error
+  }
+
+  // Process result
+  return result
+}
+```
+
+## Logging
+- Use the Winston Logger for all logging
+- Levels: fatal, error, warn, info, debug, silly
+- Be descriptive in log messages
+- Prefix the current class logprefix in the log message. For example:
+    `this.logPrefix = 'SomeClass'`
+    `this.logger.debug(this.logPrefix, 'Some debug message')`
+    `this.logger.debug(this.logPrefix, 'Some debug message', { details: 'more info' })`
+
+## Async Patterns
+- Prefer async/await with attempt pattern
+- Provide callback-based alternatives where appropriate
+- Always handle Promise rejections
+
+## Libraries
+- Use lodash for object/array manipulation
+- Use fs-extra for file operations
+- Use minimist for command-line parsing
+- Use nanoid for ID generation
+
+## OOP
+- Use ES6 classes
+- Initialize properties in constructor
+- Document public API methods
+- Keep methods focused on a single responsibility
+
+## Process Management
+- Handle process signals (SIGINT, SIGTERM)
+- Always clean up resources before exit
+- Provide detailed error messages on failures
+
+## Commit Messages
+- Ensure commit messages follow the Conventional Commits specification
+- Ensure commit messages are short and to the point
