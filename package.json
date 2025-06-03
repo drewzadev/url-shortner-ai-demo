@@ -1,0 +1,19 @@
+{
+  "name": "url-shortener-ai-demo",
+  "version": "0.0.1",
+  "description": "URL Shortener service",
+  "main": "url-shortener.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/drewzadev/url-shortner-ai-demo.git"
+  },
+  "author": "Andrew Burns",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/drewzadev/url-shortner-ai-demo/issues"
+  },
+  "homepage": "https://github.com/drewzadev/url-shortner-ai-demo#readme"
+}
