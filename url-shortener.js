@@ -17,6 +17,8 @@ import webRoutes from './routes/web.js'
 
 // Services imports
 import RedisService from './services/RedisService.js'
+import ShortCodePoolService from './services/ShortCodePoolService.js'
+import ShortCodePoolMonitor from './utils/ShortCodePoolMonitor.js'
 import logger from './config/logger.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -29,6 +31,8 @@ class UrlShortenerServer {
     this.port = process.env.PORT || 3000
     this.logPrefix = 'UrlShortenerServer'
     this.logger = logger
+    this.poolService = new ShortCodePoolService()
+    this.poolMonitor = new ShortCodePoolMonitor()
     
     this._setupMiddleware()
     this._setupRoutes()
@@ -76,17 +80,21 @@ class UrlShortenerServer {
         }
       }
       
-      // Check Redis health
+      // Check Redis health and pool status
       try {
-        const redisService = new RedisService()
-        if (redisService.isConnected) {
-          await redisService.healthCheck()
-          health.services.redis = 'healthy'
+        const poolStatus = await this.poolMonitor.checkPoolLevel()
+        if (poolStatus.status === 'error') {
+          health.services.redis = 'unhealthy'
+          health.services.shortCodePool = 'unhealthy'
         } else {
-          health.services.redis = 'disconnected'
+          health.services.redis = 'healthy'
+          health.services.shortCodePool = poolStatus.level
+          health.poolSize = poolStatus.poolSize
+          health.poolLevel = poolStatus.level
         }
       } catch (error) {
         health.services.redis = 'unhealthy'
+        health.services.shortCodePool = 'unhealthy'
       }
       
       // Check Database health
@@ -160,6 +168,16 @@ class UrlShortenerServer {
 
   async _closeDatabaseConnections() {
     try {
+      // Stop pool monitoring
+      if (this.poolMonitor) {
+        await this.poolMonitor.stopMonitoring()
+      }
+      
+      // Shutdown pool service
+      if (this.poolService) {
+        await this.poolService.shutdown()
+      }
+      
       // Close Redis connection
       const redisService = new RedisService()
       await redisService.disconnect()
@@ -227,9 +245,13 @@ class UrlShortenerServer {
   }
 
   async _initializeRedis() {
-    const redisService = new RedisService()
-    await redisService.connect()
-    await redisService.populateShortCodePool()
+    // Initialize the pool service (includes Redis connection and pool setup)
+    await this.poolService.initialize()
+    
+    // Start pool monitoring
+    await this.poolMonitor.startMonitoring()
+    
+    this.logger.info(this.logPrefix, 'Redis and short code pool initialization completed')
   }
 
   async _initializeDatabase() {

@@ -100,29 +100,141 @@ class RedisService {
     }
   }
 
-  async populateShortCodePool() {
-    this.logger.info(this.logPrefix, 'Populating short code pool...')
+  async populateShortCodePool(codes = []) {
+    this.logger.info(this.logPrefix, 'Populating short code pool...', { codeCount: codes.length })
     
-    // TODO: Implement short code pool population
-    // For now, just log that it's not implemented
-    this.logger.warn(this.logPrefix, 'Short code pool population not yet implemented')
+    if (!this.isConnected || !this.client) {
+      this.logger.warn(this.logPrefix, 'Redis not connected, skipping pool population')
+      return false
+    }
+
+    if (codes.length === 0) {
+      this.logger.warn(this.logPrefix, 'No codes provided for pool population')
+      return false
+    }
+
+    // Add codes to the pool in batches for performance
+    const batchSize = 1000
+    let addedCount = 0
+
+    for (let i = 0; i < codes.length; i += batchSize) {
+      const batch = codes.slice(i, i + batchSize)
+      
+      const [error, result] = await __(this.client.lPush(this.shortCodePoolKey, ...batch))
+      
+      if (error) {
+        this.logger.error(this.logPrefix, 'Failed to add codes to pool', { 
+          batch: Math.floor(i / batchSize) + 1, 
+          error: error.message 
+        })
+        throw error
+      }
+      
+      addedCount += batch.length
+      
+      if (i % (batchSize * 10) === 0) {
+        this.logger.debug(this.logPrefix, 'Pool population progress', { 
+          added: addedCount, 
+          total: codes.length 
+        })
+      }
+    }
+    
+    this.logger.info(this.logPrefix, 'Short code pool populated successfully', { 
+      addedCount, 
+      totalRequested: codes.length 
+    })
     
     return true
   }
 
   async getShortCode() {
+    const startTime = Date.now()
+    
     if (!this.isConnected || !this.client) {
       this.logger.debug(this.logPrefix, 'Redis not connected, generating fallback short code')
-      // Generate a simple fallback short code
-      return this._generateFallbackShortCode()
+      return {
+        code: this._generateFallbackShortCode(),
+        source: 'fallback',
+        responseTime: Date.now() - startTime
+      }
     }
 
     this.logger.debug(this.logPrefix, 'Getting short code from pool')
     
-    // TODO: Implement getting short code from Redis pool
-    this.logger.warn(this.logPrefix, 'Getting short code from pool not yet implemented, using fallback')
+    // Try to get short code with retry logic
+    const maxRetries = 3
+    let lastError
     
-    return this._generateFallbackShortCode()
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const [error, shortCode] = await __(this.client.lPop(this.shortCodePoolKey))
+      
+      if (!error && shortCode) {
+        const responseTime = Date.now() - startTime
+        
+        // Get remaining pool size for monitoring
+        const [sizeError, poolSize] = await __(this.getPoolSize())
+        const remainingPoolSize = sizeError ? 'unknown' : poolSize
+        
+        this.logger.debug(this.logPrefix, 'Retrieved short code from pool', { 
+          shortCode, 
+          responseTime,
+          remainingPoolSize,
+          attempt
+        })
+        
+        // Check if pool is running low
+        if (!sizeError && poolSize <= (parseInt(process.env.SHORT_CODE_REPLENISH_THRESHOLD) || 5000)) {
+          this.logger.warn(this.logPrefix, 'Short code pool running low', { 
+            remainingPoolSize: poolSize,
+            threshold: parseInt(process.env.SHORT_CODE_REPLENISH_THRESHOLD) || 5000
+          })
+        }
+        
+        return {
+          code: shortCode,
+          source: 'redis_pool',
+          responseTime,
+          remainingPoolSize,
+          attempt
+        }
+      }
+      
+      if (error) {
+        lastError = error
+        this.logger.warn(this.logPrefix, `Failed to get short code from pool (attempt ${attempt}/${maxRetries})`, { 
+          error: error.message 
+        })
+        
+        if (attempt < maxRetries) {
+          // Wait before retry with exponential backoff
+          const delay = Math.pow(2, attempt) * 100
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+      } else {
+        // No error but no short code means pool is empty
+        this.logger.warn(this.logPrefix, 'No short codes available in pool, using fallback')
+        break
+      }
+    }
+    
+    // All retries failed or pool is empty, use fallback
+    const responseTime = Date.now() - startTime
+    
+    if (lastError) {
+      this.logger.error(this.logPrefix, 'All attempts to get short code from pool failed, using fallback', { 
+        error: lastError.message,
+        attempts: maxRetries,
+        responseTime
+      })
+    }
+    
+    return {
+      code: this._generateFallbackShortCode(),
+      source: 'fallback',
+      responseTime,
+      error: lastError ? lastError.message : 'pool_empty'
+    }
   }
 
   _generateFallbackShortCode() {
@@ -202,6 +314,124 @@ class RedisService {
     }
     
     return result === 'PONG'
+  }
+
+  async getPoolSize() {
+    if (!this.isConnected || !this.client) {
+      this.logger.debug(this.logPrefix, 'Redis not connected, cannot get pool size')
+      return 0
+    }
+
+    const [error, size] = await __(this.client.lLen(this.shortCodePoolKey))
+    
+    if (error) {
+      this.logger.error(this.logPrefix, 'Failed to get pool size', { error: error.message })
+      throw error
+    }
+    
+    return size || 0
+  }
+
+  async addCodesToPool(codes) {
+    if (!this.isConnected || !this.client) {
+      this.logger.warn(this.logPrefix, 'Redis not connected, cannot add codes to pool')
+      return false
+    }
+
+    if (!codes || codes.length === 0) {
+      this.logger.debug(this.logPrefix, 'No codes provided to add to pool')
+      return true
+    }
+
+    const [error] = await __(this.client.lPush(this.shortCodePoolKey, ...codes))
+    
+    if (error) {
+      this.logger.error(this.logPrefix, 'Failed to add codes to pool', { 
+        codeCount: codes.length, 
+        error: error.message 
+      })
+      throw error
+    }
+    
+    this.logger.debug(this.logPrefix, 'Added codes to pool', { codeCount: codes.length })
+    return true
+  }
+
+  async removeCodesFromPool(codes) {
+    if (!this.isConnected || !this.client) {
+      this.logger.warn(this.logPrefix, 'Redis not connected, cannot remove codes from pool')
+      return 0
+    }
+
+    if (!codes || codes.length === 0) {
+      this.logger.debug(this.logPrefix, 'No codes provided to remove from pool')
+      return 0
+    }
+
+    let removedCount = 0
+
+    for (const code of codes) {
+      const [error, count] = await __(this.client.lRem(this.shortCodePoolKey, 0, code))
+      
+      if (error) {
+        this.logger.warn(this.logPrefix, 'Failed to remove code from pool', { 
+          code, 
+          error: error.message 
+        })
+        continue
+      }
+      
+      removedCount += count || 0
+    }
+    
+    this.logger.debug(this.logPrefix, 'Removed codes from pool', { 
+      requestedCount: codes.length, 
+      removedCount 
+    })
+    
+    return removedCount
+  }
+
+  async getPoolStatistics() {
+    if (!this.isConnected || !this.client) {
+      return {
+        connected: false,
+        poolSize: 0,
+        timestamp: new Date().toISOString()
+      }
+    }
+
+    const [sizeError, poolSize] = await __(this.getPoolSize())
+    
+    const stats = {
+      connected: this.isConnected,
+      poolSize: sizeError ? 0 : poolSize,
+      timestamp: new Date().toISOString(),
+      poolKey: this.shortCodePoolKey
+    }
+
+    if (sizeError) {
+      stats.error = sizeError.message
+    }
+
+    return stats
+  }
+
+  async clearPool() {
+    if (!this.isConnected || !this.client) {
+      this.logger.warn(this.logPrefix, 'Redis not connected, cannot clear pool')
+      return false
+    }
+
+    const [error] = await __(this.client.del(this.shortCodePoolKey))
+    
+    if (error) {
+      this.logger.error(this.logPrefix, 'Failed to clear pool', { error: error.message })
+      throw error
+    }
+    
+    this.logger.info(this.logPrefix, 'Short code pool cleared')
+    return true
   }
 }
 
