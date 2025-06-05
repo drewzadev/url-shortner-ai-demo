@@ -1,12 +1,12 @@
 ## Relevant Files
 
-- `services/UrlService.js` - Core business logic service for URL operations (new file to be created)
+- `services/UrlService.js` - Core business logic service for URL operations (modified to use validators utility)
 - `services/UrlService.test.js` - Unit tests for UrlService
-- `utils/validators.js` - URL validation utilities (new file to be created)  
+- `utils/validators.js` - URL validation utilities (new file created with comprehensive validation)
 - `utils/validators.test.js` - Unit tests for validators
-- `routes/api.js` - API route handlers (existing file to be modified)
+- `routes/api.js` - API route handlers (modified to use comprehensive validators utility)
 - `routes/api.test.js` - Integration tests for API routes
-- `config/app.js` - Application configuration (existing file to be modified)
+- `config/app.js` - Application configuration (enhanced with validation settings and limits)
 - `test/integration/api.test.js` - Integration tests for API endpoints
 - `test/services/UrlService.test.js` - Unit tests for UrlService
 
@@ -20,38 +20,38 @@
 
 ## Tasks
 
-- [ ] 1.0 Create UrlService Business Logic Layer
-  - [ ] 1.1 Create UrlService class with constructor accepting database, redis, and logger dependencies
-  - [ ] 1.2 Implement createShortUrl(originalUrl) method with URL validation, short code retrieval, database creation, and caching
-  - [ ] 1.3 Implement createBulkShortUrls(urls) method with batch processing, transaction handling, and all-or-nothing failure semantics
-  - [ ] 1.4 Implement getUrlByShortCode(shortCode) method with cache-first lookup and database fallback
-  - [ ] 1.5 Implement deleteUrl(shortCode) method with database deletion and cache invalidation
-  - [ ] 1.6 Implement getAllUrls() method to retrieve all URLs from database with metadata
-  - [ ] 1.7 Implement incrementClickCount(shortCode) method for tracking URL clicks
-  - [ ] 1.8 Add comprehensive error handling using attempt.js wrapper throughout all methods
-  - [ ] 1.9 Add detailed logging for all operations with appropriate log levels
-  - [ ] 1.10 Implement expiration date calculation using Moment.js (default 6 months)
+- [x] 1.0 Create UrlService Business Logic Layer
+  - [x] 1.1 Create UrlService class with constructor accepting database, redis, and logger dependencies
+  - [x] 1.2 Implement createShortUrl(originalUrl) method with URL validation, short code retrieval, database creation, and caching
+  - [x] 1.3 Implement createBulkShortUrls(urls) method with batch processing, transaction handling, and all-or-nothing failure semantics
+  - [x] 1.4 Implement getUrlByShortCode(shortCode) method with cache-first lookup and database fallback
+  - [x] 1.5 Implement deleteUrl(shortCode) method with database deletion and cache invalidation
+  - [x] 1.6 Implement getAllUrls() method to retrieve all URLs from database with metadata
+  - [x] 1.7 Implement incrementClickCount(shortCode) method for tracking URL clicks
+  - [x] 1.8 Add comprehensive error handling using attempt.js wrapper throughout all methods
+  - [x] 1.9 Add detailed logging for all operations with appropriate log levels
+  - [x] 1.10 Implement expiration date calculation using Moment.js (default 6 months)
 
-- [ ] 2.0 Implement Core API Endpoints  
-  - [ ] 2.1 Modify POST /api/shorten endpoint to integrate with UrlService.createShortUrl()
-  - [ ] 2.2 Modify POST /api/shorten/bulk endpoint to integrate with UrlService.createBulkShortUrls() and enforce 1000 URL limit
-  - [ ] 2.3 Modify GET /api/url/:shortCode endpoint to integrate with UrlService.getUrlByShortCode()
-  - [ ] 2.4 Modify DELETE /api/url/:shortCode endpoint to integrate with UrlService.deleteUrl()
-  - [ ] 2.5 Modify GET /api/urls endpoint to integrate with UrlService.getAllUrls()
-  - [ ] 2.6 Implement standardized JSON response format for all success responses
-  - [ ] 2.7 Implement standardized error response format with status_code, error.code, error.message, and error.details structure
-  - [ ] 2.8 Add proper HTTP status code mapping (200, 201, 400, 404, 500)
-  - [ ] 2.9 Add request validation and parsing for all endpoints
-  - [ ] 2.10 Update route factory to instantiate UrlService with proper dependencies
+- [x] 2.0 Implement Core API Endpoints  
+  - [x] 2.1 Modify POST /api/shorten endpoint to integrate with UrlService.createShortUrl()
+  - [x] 2.2 Modify POST /api/shorten/bulk endpoint to integrate with UrlService.createBulkShortUrls() and enforce 1000 URL limit
+  - [x] 2.3 Modify GET /api/url/:shortCode endpoint to integrate with UrlService.getUrlByShortCode()
+  - [x] 2.4 Modify DELETE /api/url/:shortCode endpoint to integrate with UrlService.deleteUrl()
+  - [x] 2.5 Modify GET /api/urls endpoint to integrate with UrlService.getAllUrls()
+  - [x] 2.6 Implement standardized JSON response format for all success responses
+  - [x] 2.7 Implement standardized error response format with status_code, error.code, error.message, and error.details structure
+  - [x] 2.8 Add proper HTTP status code mapping (200, 201, 400, 404, 500)
+  - [x] 2.9 Add request validation and parsing for all endpoints
+  - [x] 2.10 Update route factory to instantiate UrlService with proper dependencies
 
-- [ ] 3.0 Add URL Validation and Configuration
-  - [ ] 3.1 Create utils/validators.js with basic URL validation function (protocol check, format validation)
-  - [ ] 3.2 Add URL length validation (configurable max length, default 2048 characters)
-  - [ ] 3.3 Implement validation for bulk URL requests (array format, individual URL validation)
-  - [ ] 3.4 Add configuration values to config/app.js for URL validation limits and default expiration
-  - [ ] 3.5 Add configuration for base URL construction in API responses
-  - [ ] 3.6 Add validation for request size limits (1000 URL maximum for bulk operations)
-  - [ ] 3.7 Implement proper error messages for validation failures with details array
+- [x] 3.0 Add URL Validation and Configuration
+  - [x] 3.1 Create utils/validators.js with basic URL validation function (protocol check, format validation)
+  - [x] 3.2 Add URL length validation (configurable max length, default 2048 characters)
+  - [x] 3.3 Implement validation for bulk URL requests (array format, individual URL validation)
+  - [x] 3.4 Add configuration values to config/app.js for URL validation limits and default expiration
+  - [x] 3.5 Add configuration for base URL construction in API responses
+  - [x] 3.6 Add validation for request size limits (1000 URL maximum for bulk operations)
+  - [x] 3.7 Implement proper error messages for validation failures with details array
 
 - [ ] 4.0 Integration and Error Handling
   - [ ] 4.1 Test integration between UrlService and existing DatabaseService

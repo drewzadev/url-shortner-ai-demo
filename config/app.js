@@ -4,7 +4,7 @@ export const appConfig = {
     port: process.env.PORT || 3000,
     trustProxy: process.env.TRUST_PROXY === 'true',
     requestTimeout: parseInt(process.env.REQUEST_TIMEOUT_MS) || 30000,
-    baseUrl: process.env.BASE_URL
+    baseUrl: process.env.BASE_URL || 'http://localhost:3000'
   },
   shortCode: {
     poolSize: parseInt(process.env.SHORT_CODE_POOL_SIZE) || 1000000,
@@ -13,6 +13,21 @@ export const appConfig = {
     batchSize: parseInt(process.env.SHORT_CODE_GENERATION_BATCH_SIZE) || 50000,
     length: parseInt(process.env.SHORT_CODE_LENGTH) || 5,
     charset: process.env.SHORT_CODE_CHARSET || 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  },
+  url: {
+    maxLength: parseInt(process.env.URL_MAX_LENGTH) || 2048,
+    minLength: parseInt(process.env.URL_MIN_LENGTH) || 10,
+    defaultExpirationMonths: parseInt(process.env.URL_DEFAULT_EXPIRATION_MONTHS) || 6,
+    cacheTtlSeconds: parseInt(process.env.URL_CACHE_TTL_SECONDS) || 3600,
+    bulkOperationLimit: parseInt(process.env.URL_BULK_OPERATION_LIMIT) || 1000,
+    allowedProtocols: (process.env.URL_ALLOWED_PROTOCOLS || 'http:,https:').split(','),
+    allowLocalhost: process.env.URL_ALLOW_LOCALHOST === 'true',
+    allowIpAddresses: process.env.URL_ALLOW_IP_ADDRESSES === 'true'
+  },
+  validation: {
+    maxRequestBodySize: parseInt(process.env.MAX_REQUEST_BODY_SIZE_BYTES) || 10 * 1024 * 1024, // 10MB
+    maxErrorDetailsCount: parseInt(process.env.MAX_ERROR_DETAILS_COUNT) || 5,
+    strictValidation: process.env.STRICT_URL_VALIDATION === 'true'
   },
   database: {
     connectionPoolMax: parseInt(process.env.DB_CONNECTION_POOL_MAX) || 10,
