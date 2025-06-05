@@ -7,6 +7,7 @@
 - Use const for immutable variables, let for mutable ones (no var)
 - Single quotes for strings
 - Prefix private methods with underscore (_privateMethod)
+- Add descriptive JSDOC headers for each function you create with type information for each parameter
 
 ## Error Handling
 - Use libs/attempt.mjs wrapper for async functions: const [error, result] = await __(asyncFunction())
