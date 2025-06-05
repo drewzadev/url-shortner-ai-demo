@@ -1,6 +1,6 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
 # Task List Management
@@ -13,6 +13,8 @@ Guidelines for managing task lists in markdown files to track progress on comple
   1. When you finish a **sub‑task**, immediately mark it as completed by changing `[ ]` to `[x]`.
   2. If **all** subtasks underneath a parent task are now `[x]`, also mark the **parent task** as completed.
 - Stop after each sub‑task and wait for the user’s go‑ahead.
+- If the user has allowed you to implement multiple sub-tasks in one go, ensure that you mark each task as complete immediately after completing the sub-task.
+- Read all the tasks in the task list, including tasks that you are not instructed to implement. This is to ensure that you implement the required functionality in the task and don't duplicate work that will be implemented in later tasks.
 
 ## Task List Maintenance
 
@@ -35,4 +37,5 @@ When working with task lists, the AI must:
 3. Add newly discovered tasks.
 4. Keep “Relevant Files” accurate and up to date.
 5. Before starting work, check which sub‑task is next.
+6. Before starting work, check and understand the tasks ahead in other sub-tasks and main tasks to only implement what is required in the current task.
 6. After implementing a sub‑task, update the file and then pause for user approval.
