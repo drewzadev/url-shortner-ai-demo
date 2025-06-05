@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>URL Shortener</title>
+    
+    <!-- Tailwind CSS CDN for development -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            750: '#334155',
+                            850: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/js/app.js" as="script">
+</head>
+<body class="bg-slate-900 text-white min-h-screen">
+    <!-- Main container -->
+    <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <!-- Header -->
+        <header class="glass-effect border-b border-gray-600/30 sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 gradient-bg-primary rounded-lg flex items-center justify-center shadow-medium">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.102m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                            </svg>
+                        </div>
+                        <h1 class="text-xl font-bold text-white">URL Shortener</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-300 mobile-hidden">Fast • Reliable • Secure</span>
+                        <div class="text-xs text-gray-500 mobile-hidden">
+                            <kbd class="px-2 py-1 bg-slate-700 rounded text-xs">Ctrl+K</kbd> to create
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 optimize-repaint">
+            <%- include('partials/toast') %>
+
+            <!-- Hero Section -->
+            <div class="text-center mb-12 animate-fade-in">
+                <h2 class="text-4xl font-bold text-white mb-4">
+                    Shorten Your URLs
+                    <span class="text-transparent bg-clip-text gradient-bg-primary">Instantly</span>
+                </h2>
+                <p class="text-xl text-gray-300 max-w-2xl mx-auto">
+                    Transform long, complex URLs into short, shareable links. Fast, reliable, and completely free.
+                </p>
+            </div>
+
+            <!-- URL Creation Section -->
+            <div class="mb-12 animate-fade-in" style="animation-delay: 0.1s;">
+                <%- include('partials/url-form') %>
+            </div>
+
+            <!-- URL Listing Section -->
+            <div class="space-y-6 animate-fade-in" style="animation-delay: 0.2s;">
+                <!-- Section Header -->
+                <div class="flex items-center justify-between">
+                    <h3 class="text-2xl font-semibold text-white">Your Shortened URLs</h3>
+                    <div class="flex items-center space-x-2 text-sm text-gray-400 mobile-hidden">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>Click on short URLs to test them</span>
+                    </div>
+                </div>
+
+                <!-- Desktop Table View -->
+                <div class="hidden md:block table-responsive">
+                    <%- include('partials/url-table', { urls: urls }) %>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div class="block md:hidden">
+                    <%- include('partials/url-cards', { urls: urls }) %>
+                </div>
+
+                <!-- Infinite Scroll Loading Indicator -->
+                <div id="infinite-scroll-loading" class="hidden">
+                    <%- include('partials/loading') %>
+                </div>
+            </div>
+
+            <!-- Empty State (shown when no URLs exist) -->
+            <div id="empty-state" class="text-center py-16 <%= urls && urls.length > 0 ? 'hidden' : '' %> animate-fade-in">
+                <div class="w-24 h-24 mx-auto mb-6 bg-slate-800 rounded-full flex items-center justify-center shadow-medium">
+                    <svg class="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.102m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-300 mb-2">No URLs found</h3>
+                <p class="text-gray-500 mb-6">Use the "Create Short URL" button to add your first URL.</p>
+                <button onclick="toggleUrlForm()" class="inline-flex items-center px-4 py-2 gradient-bg-primary hover:opacity-90 text-white rounded-lg transition-all btn-hover-lift shadow-medium">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Get Started
+                </button>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="glass-effect border-t border-gray-600/30 mt-16 no-print">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <div class="flex flex-col md:flex-row justify-between items-center mobile-gap-2">
+                    <div class="text-sm text-gray-400 mobile-text-center">
+                        © 2024 URL Shortener. Built with Node.js & Express.
+                    </div>
+                    <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                        <span class="text-xs text-gray-500">Powered by AI</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast-container" class="toast-container">
+        <!-- Toasts will be dynamically inserted here -->
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay fixed inset-0 bg-black/50 z-40 hidden items-center justify-center">
+        <div class="glass-effect rounded-lg p-6 flex items-center space-x-3 shadow-large animate-scale-in">
+            <div class="spinner w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full gpu-accelerated"></div>
+            <span class="text-white">Processing...</span>
+        </div>
+    </div>
+
+    <!-- Page data container for JavaScript -->
+    <div id="page-data" 
+         data-urls="<%- encodeURIComponent(JSON.stringify(urls || [])) %>"
+         data-error="<%- encodeURIComponent(JSON.stringify(error || null)) %>"
+         data-success="<%- encodeURIComponent(JSON.stringify(success || null)) %>"
+         style="display: none;">
+    </div>
+
+    <!-- Main JavaScript -->
+    <script src="/js/app.js"></script>
+</body>
+</html> 

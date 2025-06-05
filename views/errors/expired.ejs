@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Expired - URL Shortener</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            750: '#334155',
+                            850: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen">
+    <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4">
+        <div class="max-w-md w-full text-center">
+            <!-- Error Icon -->
+            <div class="w-24 h-24 mx-auto mb-8 bg-yellow-900/20 rounded-full flex items-center justify-center">
+                <svg class="w-12 h-12 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            
+            <!-- Error Code -->
+            <h1 class="text-6xl font-bold text-yellow-400 mb-4">410</h1>
+            
+            <!-- Error Title -->
+            <h2 class="text-2xl font-semibold text-white mb-4">URL Expired</h2>
+            
+            <!-- Error Message -->
+            <div class="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-gray-600/30 p-6 mb-8">
+                <p class="text-gray-300 mb-4">
+                    The short URL "<span class="font-mono text-blue-400">/<%= typeof shortCode !== 'undefined' ? shortCode : 'unknown' %></span>" has expired and is no longer available.
+                </p>
+                
+                <% if (typeof originalUrl !== 'undefined' && originalUrl) { %>
+                    <div class="bg-slate-700/30 rounded-lg p-4 mb-4">
+                        <p class="text-sm text-gray-400 mb-2">Original URL was:</p>
+                        <p class="text-sm text-blue-300 break-all font-mono">
+                            <%= originalUrl %>
+                        </p>
+                    </div>
+                <% } %>
+                
+                <% if (typeof expiresAt !== 'undefined' && expiresAt) { %>
+                    <p class="text-sm text-gray-400 mb-4">
+                        Expired on: <span class="text-yellow-300"><%= new Date(expiresAt).toLocaleDateString() %></span>
+                    </p>
+                <% } %>
+                
+                <div class="text-sm text-gray-500">
+                    <p class="mb-2">What you can do:</p>
+                    <ul class="text-left space-y-1 max-w-xs mx-auto">
+                        <li>• Visit the original URL directly</li>
+                        <li>• Create a new short URL</li>
+                        <li>• Contact the URL creator</li>
+                        <li>• Check if there's an updated link</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="space-y-4">
+                <% if (typeof originalUrl !== 'undefined' && originalUrl) { %>
+                    <a href="<%= originalUrl %>" target="_blank" class="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                        </svg>
+                        Visit Original URL
+                    </a>
+                <% } %>
+                
+                <a href="/" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    Create New Short URL
+                </a>
+                
+                <div class="text-center">
+                    <button onclick="history.back()" class="text-gray-400 hover:text-gray-300 text-sm transition-colors">
+                        ← Go Back
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="mt-12 pt-8 border-t border-gray-600/30">
+                <p class="text-xs text-gray-500">
+                    URL Shortener Service • URL Expired
+                </p>
+                <p class="text-xs text-gray-600 mt-1">
+                    Short URLs have expiration dates for security and performance reasons.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

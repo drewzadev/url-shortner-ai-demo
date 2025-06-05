@@ -1,0 +1,265 @@
+<!-- Loading State Component -->
+<div class="loading-container flex items-center justify-center py-8">
+    <div class="flex flex-col items-center space-y-4">
+        <!-- Spinner -->
+        <div class="relative">
+            <div class="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full spinner"></div>
+            <div class="absolute inset-0 w-12 h-12 border-4 border-transparent border-t-purple-500 rounded-full spinner" style="animation-delay: 0.15s;"></div>
+        </div>
+        
+        <!-- Loading Text -->
+        <div class="text-center">
+            <p class="text-gray-300 text-sm font-medium">Loading URLs...</p>
+            <p class="text-gray-500 text-xs mt-1">Please wait while we fetch your data</p>
+        </div>
+    </div>
+</div>
+
+<!-- Skeleton Loading for Table Rows -->
+<div id="skeleton-table-rows" class="hidden">
+    <tr class="animate-pulse">
+        <td class="px-6 py-4">
+            <div class="h-4 bg-slate-700 rounded w-3/4"></div>
+        </td>
+        <td class="px-6 py-4">
+            <div class="h-4 bg-slate-700 rounded w-1/2"></div>
+        </td>
+        <td class="px-6 py-4">
+            <div class="h-4 bg-slate-700 rounded w-1/3"></div>
+        </td>
+        <td class="px-6 py-4">
+            <div class="h-6 bg-slate-700 rounded-full w-12"></div>
+        </td>
+        <td class="px-6 py-4">
+            <div class="h-8 bg-slate-700 rounded w-16"></div>
+        </td>
+    </tr>
+    <tr class="animate-pulse">
+        <td class="px-6 py-4">
+            <div class="h-4 bg-slate-700 rounded w-2/3"></div>
+        </td>
+        <td class="px-6 py-4">
+            <div class="h-4 bg-slate-700 rounded w-1/2"></div>
+        </td>
+        <td class="px-6 py-4">
+            <div class="h-4 bg-slate-700 rounded w-1/4"></div>
+        </td>
+        <td class="px-6 py-4">
+            <div class="h-6 bg-slate-700 rounded-full w-12"></div>
+        </td>
+        <td class="px-6 py-4">
+            <div class="h-8 bg-slate-700 rounded w-16"></div>
+        </td>
+    </tr>
+    <tr class="animate-pulse">
+        <td class="px-6 py-4">
+            <div class="h-4 bg-slate-700 rounded w-5/6"></div>
+        </td>
+        <td class="px-6 py-4">
+            <div class="h-4 bg-slate-700 rounded w-1/2"></div>
+        </td>
+        <td class="px-6 py-4">
+            <div class="h-4 bg-slate-700 rounded w-1/3"></div>
+        </td>
+        <td class="px-6 py-4">
+            <div class="h-6 bg-slate-700 rounded-full w-12"></div>
+        </td>
+        <td class="px-6 py-4">
+            <div class="h-8 bg-slate-700 rounded w-16"></div>
+        </td>
+    </tr>
+</div>
+
+<!-- Skeleton Loading for Cards -->
+<div id="skeleton-cards" class="hidden space-y-4">
+    <div class="bg-slate-800/50 rounded-xl border border-gray-600/30 p-4 animate-pulse">
+        <div class="flex items-start justify-between mb-3">
+            <div class="flex-1 space-y-3">
+                <div>
+                    <div class="h-3 bg-slate-700 rounded w-20 mb-2"></div>
+                    <div class="h-4 bg-slate-700 rounded w-3/4"></div>
+                </div>
+                <div>
+                    <div class="h-3 bg-slate-700 rounded w-16 mb-2"></div>
+                    <div class="h-4 bg-slate-700 rounded w-1/2"></div>
+                </div>
+            </div>
+            <div class="w-8 h-8 bg-slate-700 rounded-lg"></div>
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-gray-600/30">
+            <div class="h-4 bg-slate-700 rounded w-1/4"></div>
+            <div class="h-6 bg-slate-700 rounded-full w-12"></div>
+        </div>
+    </div>
+    
+    <div class="bg-slate-800/50 rounded-xl border border-gray-600/30 p-4 animate-pulse">
+        <div class="flex items-start justify-between mb-3">
+            <div class="flex-1 space-y-3">
+                <div>
+                    <div class="h-3 bg-slate-700 rounded w-20 mb-2"></div>
+                    <div class="h-4 bg-slate-700 rounded w-2/3"></div>
+                </div>
+                <div>
+                    <div class="h-3 bg-slate-700 rounded w-16 mb-2"></div>
+                    <div class="h-4 bg-slate-700 rounded w-1/2"></div>
+                </div>
+            </div>
+            <div class="w-8 h-8 bg-slate-700 rounded-lg"></div>
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-gray-600/30">
+            <div class="h-4 bg-slate-700 rounded w-1/3"></div>
+            <div class="h-6 bg-slate-700 rounded-full w-12"></div>
+        </div>
+    </div>
+    
+    <div class="bg-slate-800/50 rounded-xl border border-gray-600/30 p-4 animate-pulse">
+        <div class="flex items-start justify-between mb-3">
+            <div class="flex-1 space-y-3">
+                <div>
+                    <div class="h-3 bg-slate-700 rounded w-20 mb-2"></div>
+                    <div class="h-4 bg-slate-700 rounded w-4/5"></div>
+                </div>
+                <div>
+                    <div class="h-3 bg-slate-700 rounded w-16 mb-2"></div>
+                    <div class="h-4 bg-slate-700 rounded w-1/2"></div>
+                </div>
+            </div>
+            <div class="w-8 h-8 bg-slate-700 rounded-lg"></div>
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-gray-600/30">
+            <div class="h-4 bg-slate-700 rounded w-1/4"></div>
+            <div class="h-6 bg-slate-700 rounded-full w-12"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Inline Loading Spinner (small) -->
+<div id="inline-spinner-template" class="hidden">
+    <div class="inline-flex items-center">
+        <div class="w-4 h-4 border-2 border-current border-t-transparent rounded-full spinner"></div>
+        <span class="ml-2 text-sm">Loading...</span>
+    </div>
+</div>
+
+<script>
+/**
+ * Show loading state for infinite scroll
+ */
+function showInfiniteScrollLoading() {
+    const loadingElement = document.getElementById('infinite-scroll-loading');
+    if (loadingElement) {
+        loadingElement.classList.remove('hidden');
+    }
+}
+
+/**
+ * Hide loading state for infinite scroll
+ */
+function hideInfiniteScrollLoading() {
+    const loadingElement = document.getElementById('infinite-scroll-loading');
+    if (loadingElement) {
+        loadingElement.classList.add('hidden');
+    }
+}
+
+/**
+ * Show skeleton loading for table
+ */
+function showTableSkeleton() {
+    const tbody = document.getElementById('url-table-body');
+    const skeletonTemplate = document.getElementById('skeleton-table-rows');
+    
+    if (tbody && skeletonTemplate) {
+        // Clear existing content
+        tbody.innerHTML = '';
+        
+        // Add skeleton rows
+        const skeletonClone = skeletonTemplate.cloneNode(true);
+        skeletonClone.id = 'active-skeleton-table';
+        skeletonClone.classList.remove('hidden');
+        tbody.appendChild(skeletonClone);
+    }
+}
+
+/**
+ * Hide skeleton loading for table
+ */
+function hideTableSkeleton() {
+    const activeSkeleton = document.getElementById('active-skeleton-table');
+    if (activeSkeleton) {
+        activeSkeleton.remove();
+    }
+}
+
+/**
+ * Show skeleton loading for cards
+ */
+function showCardsSkeleton() {
+    const container = document.getElementById('url-cards-container');
+    const skeletonTemplate = document.getElementById('skeleton-cards');
+    
+    if (container && skeletonTemplate) {
+        // Clear existing content
+        container.innerHTML = '';
+        
+        // Add skeleton cards
+        const skeletonClone = skeletonTemplate.cloneNode(true);
+        skeletonClone.id = 'active-skeleton-cards';
+        skeletonClone.classList.remove('hidden');
+        container.appendChild(skeletonClone);
+    }
+}
+
+/**
+ * Hide skeleton loading for cards
+ */
+function hideCardsSkeleton() {
+    const activeSkeleton = document.getElementById('active-skeleton-cards');
+    if (activeSkeleton) {
+        activeSkeleton.remove();
+    }
+}
+
+/**
+ * Show global loading overlay
+ */
+function showGlobalLoading() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+    }
+}
+
+/**
+ * Hide global loading overlay
+ */
+function hideGlobalLoading() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+    }
+}
+
+/**
+ * Create an inline loading spinner
+ * @param {string} text - Loading text (optional)
+ * @returns {HTMLElement} Loading element
+ */
+function createInlineSpinner(text = 'Loading...') {
+    const template = document.getElementById('inline-spinner-template');
+    if (!template) return null;
+    
+    const spinner = template.cloneNode(true);
+    spinner.id = 'spinner-' + Date.now();
+    spinner.classList.remove('hidden');
+    
+    const textElement = spinner.querySelector('span');
+    if (textElement) {
+        textElement.textContent = text;
+    }
+    
+    return spinner;
+}
+</script> 

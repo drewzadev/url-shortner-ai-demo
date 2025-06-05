@@ -1,0 +1,259 @@
+<!-- Mobile URL Cards -->
+<div id="url-cards-container" class="space-y-4">
+    <% if (urls && urls.length > 0) { %>
+        <% urls.forEach(function(url, index) { %>
+            <div class="card-hover glass-effect rounded-xl border border-gray-600/30 p-4 shadow-medium print-break-inside-avoid" 
+                 data-url-id="<%= url.id %>" 
+                 data-short-code="<%= url.shortCode %>">
+                
+                <!-- Card Header -->
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1 min-w-0">
+                        <!-- Original URL -->
+                        <div class="mb-3">
+                            <label class="text-xs font-medium text-gray-400 uppercase tracking-wider">Original URL</label>
+                            <div class="mt-1">
+                                <span class="text-white text-sm break-all url-tooltip" title="<%= url.originalUrl %>">
+                                    <%= url.originalUrl %>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Short URL -->
+                        <div class="mb-2">
+                            <label class="text-xs font-medium text-gray-400 uppercase tracking-wider">Short URL</label>
+                            <div class="mt-1 flex items-center space-x-2">
+                                <a href="/<%= url.shortCode %>" 
+                                   target="_blank" 
+                                   class="inline-flex items-center text-blue-400 hover:text-blue-300 transition-all btn-hover-lift">
+                                    <span class="mr-2 font-mono">/<%= url.shortCode %></span>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                    </svg>
+                                </a>
+                                <button 
+                                    onclick="copyToClipboard(window.location.origin + '/<%= url.shortCode %>', 'Short URL copied!')"
+                                    class="p-1 text-gray-400 hover:text-gray-300 transition-colors"
+                                    title="Copy to clipboard">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Delete Button -->
+                    <button 
+                        onclick="deleteUrl('<%= url.shortCode %>')" 
+                        class="ml-3 p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 rounded-lg transition-all btn-hover-lift shadow-subtle"
+                        title="Delete URL">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Card Footer -->
+                <div class="flex items-center justify-between pt-3 border-t border-gray-600/30">
+                    <!-- Created Date -->
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="text-gray-300 text-sm" data-date="<%= url.createdAt %>">
+                            <%= formatRelativeDate(url.createdAt) %>
+                        </span>
+                    </div>
+                    
+                    <!-- Click Count -->
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900/50 text-green-300 shadow-subtle">
+                            <%= formatClickCount(url.clickCount) %>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        <% }); %>
+    <% } %>
+</div>
+
+<!-- Empty state for cards -->
+<div id="cards-empty-state" class="<%= urls && urls.length > 0 ? 'hidden' : '' %> text-center py-12 animate-fade-in">
+    <div class="w-16 h-16 mx-auto mb-4 glass-effect rounded-full flex items-center justify-center shadow-medium">
+        <svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.102m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+        </svg>
+    </div>
+    <h3 class="text-lg font-medium text-gray-300 mb-2">No URLs found</h3>
+    <p class="text-gray-500 mb-4">Create your first short URL to get started.</p>
+    <button onclick="toggleUrlForm()" class="inline-flex items-center px-4 py-2 gradient-bg-primary hover:opacity-90 text-white rounded-lg transition-all btn-hover-lift shadow-medium">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        </svg>
+        Create URL
+    </button>
+</div>
+
+<script>
+/**
+ * Add a new URL card to the mobile view
+ * @param {Object} url - URL object to add
+ */
+function addUrlToCards(url) {
+    const container = document.getElementById('url-cards-container')
+    const emptyState = document.getElementById('cards-empty-state')
+    
+    // Hide empty state if visible
+    if (!emptyState.classList.contains('hidden')) {
+        emptyState.classList.add('hidden')
+    }
+    
+    // Create new card
+    const card = document.createElement('div')
+    card.className = 'card-hover glass-effect rounded-xl border border-gray-600/30 p-4 shadow-medium print-break-inside-avoid animate-fade-in'
+    card.setAttribute('data-url-id', url.id)
+    card.setAttribute('data-short-code', url.shortCode)
+    
+    card.innerHTML = `
+        <!-- Card Header -->
+        <div class="flex items-start justify-between mb-3">
+            <div class="flex-1 min-w-0">
+                <!-- Original URL -->
+                <div class="mb-3">
+                    <label class="text-xs font-medium text-gray-400 uppercase tracking-wider">Original URL</label>
+                    <div class="mt-1">
+                        <span class="text-white text-sm break-all url-tooltip" title="${url.originalUrl}">
+                            ${url.originalUrl}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Short URL -->
+                <div class="mb-2">
+                    <label class="text-xs font-medium text-gray-400 uppercase tracking-wider">Short URL</label>
+                    <div class="mt-1 flex items-center space-x-2">
+                        <a href="/${url.shortCode}" 
+                           target="_blank" 
+                           class="inline-flex items-center text-blue-400 hover:text-blue-300 transition-all btn-hover-lift">
+                            <span class="mr-2 font-mono">/${url.shortCode}</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                        </a>
+                        <button 
+                            onclick="copyToClipboard(window.location.origin + '/${url.shortCode}', 'Short URL copied!')"
+                            class="p-1 text-gray-400 hover:text-gray-300 transition-colors"
+                            title="Copy to clipboard">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Delete Button -->
+            <button 
+                onclick="deleteUrl('${url.shortCode}')" 
+                class="ml-3 p-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 rounded-lg transition-all btn-hover-lift shadow-subtle"
+                title="Delete URL">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Card Footer -->
+        <div class="flex items-center justify-between pt-3 border-t border-gray-600/30">
+            <!-- Created Date -->
+            <div class="flex items-center space-x-2">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-gray-300 text-sm" data-date="${url.createdAt}">
+                    ${formatRelativeDate(url.createdAt)}
+                </span>
+            </div>
+            
+            <!-- Click Count -->
+            <div class="flex items-center space-x-2">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900/50 text-green-300 shadow-subtle">
+                    ${formatClickCount(url.clickCount)}
+                </span>
+            </div>
+        </div>
+    `
+    
+    // Add to top of container
+    container.insertBefore(card, container.firstChild)
+}
+
+/**
+ * Remove URL card from mobile view
+ * @param {string} shortCode - Short code of URL to remove
+ */
+function removeUrlFromCards(shortCode) {
+    const card = document.querySelector(`div[data-short-code="${shortCode}"]`)
+    if (card) {
+        // Add exit animation
+        card.classList.add('animate-slide-out-right')
+        
+        setTimeout(() => {
+            card.remove()
+            
+            // Show empty state if no cards left
+            const container = document.getElementById('url-cards-container')
+            const emptyState = document.getElementById('cards-empty-state')
+            
+            if (container.children.length === 0) {
+                emptyState.classList.remove('hidden')
+            }
+        }, 300)
+    }
+}
+</script>
+
+<%
+// Helper functions for EJS template (reuse from url-table.ejs)
+function formatRelativeDate(dateString) {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInMs = now - date
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+    
+    if (diffInDays === 0) {
+        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
+        if (diffInHours === 0) {
+            const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
+            return diffInMinutes <= 1 ? 'Just now' : `${diffInMinutes} minutes ago`
+        }
+        return diffInHours === 1 ? '1 hour ago' : `${diffInHours} hours ago`
+    } else if (diffInDays <= 7) {
+        return diffInDays === 1 ? '1 day ago' : `${diffInDays} days ago`
+    } else {
+        const day = date.getDate().toString().padStart(2, '0')
+        const month = (date.getMonth() + 1).toString().padStart(2, '0')
+        const year = date.getFullYear()
+        return `${day}-${month}-${year}`
+    }
+}
+
+function formatClickCount(count) {
+    if (count >= 1000000) {
+        return (count / 1000000).toFixed(1) + 'M'
+    } else if (count >= 1000) {
+        return (count / 1000).toFixed(1) + 'K'
+    } else {
+        return count.toString()
+    }
+}
+%> 

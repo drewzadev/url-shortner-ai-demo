@@ -1,0 +1,276 @@
+<!-- Desktop URL Table -->
+<div class="glass-effect rounded-xl border border-gray-600/30 overflow-hidden shadow-medium">
+    <div class="table-responsive">
+        <table class="w-full">
+            <thead class="gradient-bg-secondary">
+                <tr>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Original URL
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Short URL
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider tablet-hidden">
+                        Created
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Clicks
+                    </th>
+                    <th class="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="url-table-body" class="divide-y divide-gray-600/30">
+                <% if (urls && urls.length > 0) { %>
+                    <% urls.forEach(function(url, index) { %>
+                        <tr class="table-hover-row transition-all print-break-inside-avoid" data-url-id="<%= url.id %>" data-short-code="<%= url.shortCode %>">
+                            <!-- Original URL -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <div class="url-truncate url-tooltip" title="<%= url.originalUrl %>">
+                                        <span class="text-white"><%= url.originalUrl %></span>
+                                    </div>
+                                </div>
+                            </td>
+                            
+                            <!-- Short URL -->
+                            <td class="px-6 py-4">
+                                <a href="/<%= url.shortCode %>" 
+                                   target="_blank" 
+                                   class="inline-flex items-center text-blue-400 hover:text-blue-300 transition-all btn-hover-lift">
+                                    <span class="mr-2 font-mono">/<%= url.shortCode %></span>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                    </svg>
+                                </a>
+                                <button 
+                                    onclick="copyToClipboard(window.location.origin + '/<%= url.shortCode %>', 'Short URL copied!')"
+                                    class="ml-2 p-1 text-gray-400 hover:text-gray-300 transition-colors"
+                                    title="Copy to clipboard">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                </button>
+                            </td>
+                            
+                            <!-- Created Date -->
+                            <td class="px-6 py-4 tablet-hidden">
+                                <span class="text-gray-300 text-sm" data-date="<%= url.createdAt %>">
+                                    <%= formatRelativeDate(url.createdAt) %>
+                                </span>
+                            </td>
+                            
+                            <!-- Click Count -->
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900/50 text-green-300 shadow-subtle">
+                                    <%= formatClickCount(url.clickCount) %>
+                                </span>
+                            </td>
+                            
+                            <!-- Actions -->
+                            <td class="px-6 py-4">
+                                <button 
+                                    onclick="deleteUrl('<%= url.shortCode %>')" 
+                                    class="inline-flex items-center px-3 py-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 rounded-lg transition-all text-sm btn-hover-lift shadow-subtle">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                    <span class="mobile-hidden">Delete</span>
+                                </button>
+                            </td>
+                        </tr>
+                    <% }); %>
+                <% } %>
+            </tbody>
+        </table>
+        
+        <!-- Empty state for table -->
+        <div id="table-empty-state" class="<%= urls && urls.length > 0 ? 'hidden' : '' %> text-center py-12 animate-fade-in">
+            <div class="w-16 h-16 mx-auto mb-4 bg-slate-700 rounded-full flex items-center justify-center shadow-medium">
+                <svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.102m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-300 mb-2">No URLs found</h3>
+            <p class="text-gray-500">Create your first short URL to get started.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * Format relative date for display
+ * @param {string} dateString - ISO date string
+ * @returns {string} Formatted relative date
+ */
+function formatRelativeDate(dateString) {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInMs = now - date
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+    
+    if (diffInDays === 0) {
+        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
+        if (diffInHours === 0) {
+            const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
+            return diffInMinutes <= 1 ? 'Just now' : `${diffInMinutes} minutes ago`
+        }
+        return diffInHours === 1 ? '1 hour ago' : `${diffInHours} hours ago`
+    } else if (diffInDays <= 7) {
+        return diffInDays === 1 ? '1 day ago' : `${diffInDays} days ago`
+    } else {
+        // Format as DD-MM-YYYY for older dates
+        const day = date.getDate().toString().padStart(2, '0')
+        const month = (date.getMonth() + 1).toString().padStart(2, '0')
+        const year = date.getFullYear()
+        return `${day}-${month}-${year}`
+    }
+}
+
+/**
+ * Format click count with appropriate number formatting
+ * @param {number} count - Click count
+ * @returns {string} Formatted click count
+ */
+function formatClickCount(count) {
+    if (count >= 1000000) {
+        return (count / 1000000).toFixed(1) + 'M'
+    } else if (count >= 1000) {
+        return (count / 1000).toFixed(1) + 'K'
+    } else {
+        return count.toString()
+    }
+}
+
+/**
+ * Add a new URL row to the table
+ * @param {Object} url - URL object to add
+ */
+function addUrlToTable(url) {
+    const tbody = document.getElementById('url-table-body')
+    const emptyState = document.getElementById('table-empty-state')
+    
+    // Hide empty state if visible
+    if (!emptyState.classList.contains('hidden')) {
+        emptyState.classList.add('hidden')
+    }
+    
+    // Create new row
+    const row = document.createElement('tr')
+    row.className = 'table-hover-row transition-all print-break-inside-avoid animate-fade-in'
+    row.setAttribute('data-url-id', url.id)
+    row.setAttribute('data-short-code', url.shortCode)
+    
+    row.innerHTML = `
+        <td class="px-6 py-4">
+            <div class="flex items-center">
+                <div class="url-truncate url-tooltip" title="${url.originalUrl}">
+                    <span class="text-white">${url.originalUrl}</span>
+                </div>
+            </div>
+        </td>
+        <td class="px-6 py-4">
+            <a href="/${url.shortCode}" 
+               target="_blank" 
+               class="inline-flex items-center text-blue-400 hover:text-blue-300 transition-all btn-hover-lift">
+                <span class="mr-2 font-mono">/${url.shortCode}</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                </svg>
+            </a>
+            <button 
+                onclick="copyToClipboard(window.location.origin + '/${url.shortCode}', 'Short URL copied!')"
+                class="ml-2 p-1 text-gray-400 hover:text-gray-300 transition-colors"
+                title="Copy to clipboard">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                </svg>
+            </button>
+        </td>
+        <td class="px-6 py-4 tablet-hidden">
+            <span class="text-gray-300 text-sm" data-date="${url.createdAt}">
+                ${formatRelativeDate(url.createdAt)}
+            </span>
+        </td>
+        <td class="px-6 py-4">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900/50 text-green-300 shadow-subtle">
+                ${formatClickCount(url.clickCount)}
+            </span>
+        </td>
+        <td class="px-6 py-4">
+            <button 
+                onclick="deleteUrl('${url.shortCode}')" 
+                class="inline-flex items-center px-3 py-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 rounded-lg transition-all text-sm btn-hover-lift shadow-subtle">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                <span class="mobile-hidden">Delete</span>
+            </button>
+        </td>
+    `
+    
+    // Add to top of table
+    tbody.insertBefore(row, tbody.firstChild)
+}
+
+/**
+ * Remove URL row from table
+ * @param {string} shortCode - Short code of URL to remove
+ */
+function removeUrlFromTable(shortCode) {
+    const row = document.querySelector(`tr[data-short-code="${shortCode}"]`)
+    if (row) {
+        // Add exit animation
+        row.classList.add('animate-slide-out-right')
+        
+        setTimeout(() => {
+            row.remove()
+            
+            // Show empty state if no rows left
+            const tbody = document.getElementById('url-table-body')
+            const emptyState = document.getElementById('table-empty-state')
+            
+            if (tbody.children.length === 0) {
+                emptyState.classList.remove('hidden')
+            }
+        }, 300)
+    }
+}
+</script>
+
+<%
+// Helper functions for EJS template
+function formatRelativeDate(dateString) {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInMs = now - date
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+    
+    if (diffInDays === 0) {
+        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
+        if (diffInHours === 0) {
+            const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
+            return diffInMinutes <= 1 ? 'Just now' : `${diffInMinutes} minutes ago`
+        }
+        return diffInHours === 1 ? '1 hour ago' : `${diffInHours} hours ago`
+    } else if (diffInDays <= 7) {
+        return diffInDays === 1 ? '1 day ago' : `${diffInDays} days ago`
+    } else {
+        const day = date.getDate().toString().padStart(2, '0')
+        const month = (date.getMonth() + 1).toString().padStart(2, '0')
+        const year = date.getFullYear()
+        return `${day}-${month}-${year}`
+    }
+}
+
+function formatClickCount(count) {
+    if (count >= 1000000) {
+        return (count / 1000000).toFixed(1) + 'M'
+    } else if (count >= 1000) {
+        return (count / 1000).toFixed(1) + 'K'
+    } else {
+        return count.toString()
+    }
+}
+%> 

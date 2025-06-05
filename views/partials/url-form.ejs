@@ -1,0 +1,188 @@
+<!-- URL Creation Form Section -->
+<div class="glass-effect rounded-xl border border-gray-600/30 p-6 shadow-medium">
+    <!-- Create Button (always visible) -->
+    <div class="text-center">
+        <button 
+            id="create-url-btn" 
+            onclick="toggleUrlForm()" 
+            class="inline-flex items-center px-6 py-3 gradient-bg-primary hover:opacity-90 text-white font-semibold rounded-lg transition-all btn-hover-lift shadow-medium gpu-accelerated">
+            <svg class="w-5 h-5 mr-2 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            <span id="create-btn-text">Create Short URL</span>
+        </button>
+    </div>
+
+    <!-- Expandable Form Container -->
+    <div id="url-form-container" class="form-expand mt-6">
+        <form id="url-form" class="space-y-4">
+            <!-- URL Input -->
+            <div>
+                <label for="url-input" class="block text-sm font-medium text-gray-300 mb-2">
+                    Enter your long URL
+                </label>
+                <div class="relative">
+                    <input 
+                        type="url" 
+                        id="url-input" 
+                        name="url"
+                        placeholder="https://example.com/very/long/url/that/needs/shortening"
+                        class="form-input w-full px-4 py-3 bg-slate-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-subtle"
+                        required>
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.102m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                    </div>
+                </div>
+                <!-- Validation Error Message -->
+                <div id="url-error" class="hidden mt-2 text-sm text-red-400 animate-fade-in">
+                    Please enter a valid URL starting with http:// or https://
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex flex-col sm:flex-row gap-3 mobile-stack mobile-gap-2">
+                <button 
+                    type="submit" 
+                    id="submit-btn"
+                    class="flex-1 inline-flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all btn-hover-lift shadow-medium mobile-full-width">
+                    <span id="submit-btn-text">Shorten URL</span>
+                    <svg id="submit-spinner" class="hidden w-4 h-4 ml-2 spinner gpu-accelerated" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
+                        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" class="opacity-75"></path>
+                    </svg>
+                </button>
+                <button 
+                    type="button" 
+                    onclick="cancelUrlForm()" 
+                    class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-all btn-hover-lift shadow-subtle mobile-full-width">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+/**
+ * Toggle the URL form visibility
+ */
+function toggleUrlForm() {
+    const container = document.getElementById('url-form-container')
+    const btn = document.getElementById('create-url-btn')
+    const btnText = document.getElementById('create-btn-text')
+    const icon = btn.querySelector('svg')
+    
+    if (container.classList.contains('expanded')) {
+        // Collapse form
+        container.classList.remove('expanded')
+        btnText.textContent = 'Create Short URL'
+        icon.style.transform = 'rotate(0deg)'
+    } else {
+        // Expand form
+        container.classList.add('expanded')
+        btnText.textContent = 'Hide Form'
+        icon.style.transform = 'rotate(45deg)'
+        
+        // Focus on input after animation
+        setTimeout(() => {
+            const input = document.getElementById('url-input')
+            if (input) {
+                input.focus()
+                input.select()
+            }
+        }, 300)
+    }
+}
+
+/**
+ * Cancel and collapse the form
+ */
+function cancelUrlForm() {
+    const container = document.getElementById('url-form-container')
+    const btn = document.getElementById('create-url-btn')
+    const btnText = document.getElementById('create-btn-text')
+    const form = document.getElementById('url-form')
+    const icon = btn.querySelector('svg')
+    
+    // Reset form
+    form.reset()
+    hideUrlError()
+    
+    // Collapse form
+    container.classList.remove('expanded')
+    btnText.textContent = 'Create Short URL'
+    icon.style.transform = 'rotate(0deg)'
+}
+
+/**
+ * Show URL validation error
+ */
+function showUrlError(message) {
+    const errorDiv = document.getElementById('url-error')
+    const input = document.getElementById('url-input')
+    
+    errorDiv.textContent = message || 'Please enter a valid URL starting with http:// or https://'
+    errorDiv.classList.remove('hidden')
+    input.classList.add('error')
+    input.classList.remove('border-gray-600', 'focus:ring-blue-500')
+}
+
+/**
+ * Hide URL validation error
+ */
+function hideUrlError() {
+    const errorDiv = document.getElementById('url-error')
+    const input = document.getElementById('url-input')
+    
+    errorDiv.classList.add('hidden')
+    input.classList.remove('error')
+    input.classList.add('border-gray-600', 'focus:ring-blue-500')
+}
+
+/**
+ * Show form loading state
+ */
+function showFormLoading() {
+    const submitBtn = document.getElementById('submit-btn')
+    const submitText = document.getElementById('submit-btn-text')
+    const submitSpinner = document.getElementById('submit-spinner')
+    
+    submitBtn.disabled = true
+    submitBtn.classList.add('opacity-75')
+    submitText.textContent = 'Creating...'
+    submitSpinner.classList.remove('hidden')
+}
+
+/**
+ * Hide form loading state
+ */
+function hideFormLoading() {
+    const submitBtn = document.getElementById('submit-btn')
+    const submitText = document.getElementById('submit-btn-text')
+    const submitSpinner = document.getElementById('submit-spinner')
+    
+    submitBtn.disabled = false
+    submitBtn.classList.remove('opacity-75')
+    submitText.textContent = 'Shorten URL'
+    submitSpinner.classList.add('hidden')
+}
+
+/**
+ * Reset and collapse form after successful submission
+ */
+function resetFormAfterSuccess() {
+    const form = document.getElementById('url-form')
+    
+    // Reset form
+    form.reset()
+    hideUrlError()
+    hideFormLoading()
+    
+    // Collapse form after a short delay
+    setTimeout(() => {
+        cancelUrlForm()
+    }, 1000)
+}
+</script> 

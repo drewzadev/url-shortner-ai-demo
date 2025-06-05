@@ -1,0 +1,227 @@
+<!-- Toast notification template (hidden by default) -->
+<div id="toast-template" style="display: none;">
+    <div class="toast-item max-w-sm w-full bg-slate-800 border border-gray-600/30 rounded-lg shadow-lg pointer-events-auto">
+        <div class="p-4">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <!-- Success Icon -->
+                    <svg class="toast-icon-success w-6 h-6 text-green-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <!-- Error Icon -->
+                    <svg class="toast-icon-error w-6 h-6 text-red-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <!-- Info Icon -->
+                    <svg class="toast-icon-info w-6 h-6 text-blue-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <!-- Warning Icon -->
+                    <svg class="toast-icon-warning w-6 h-6 text-yellow-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <div class="ml-3 w-0 flex-1">
+                    <p class="toast-title text-sm font-medium text-white"></p>
+                    <p class="toast-message mt-1 text-sm text-gray-300"></p>
+                </div>
+                <div class="ml-4 flex-shrink-0 flex">
+                    <button class="toast-close bg-slate-800 rounded-md inline-flex text-gray-400 hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-blue-500">
+                        <span class="sr-only">Close</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Progress bar for auto-dismiss -->
+        <div class="toast-progress-container">
+            <div class="toast-progress h-1 bg-gray-600/30 rounded-b-lg overflow-hidden">
+                <div class="toast-progress-bar h-full bg-current transition-all ease-linear"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * Show a toast notification
+ * @param {string} message - The message to display
+ * @param {string} type - Toast type: 'success', 'error', 'info', 'warning'
+ * @param {string} title - Optional title for the toast
+ * @param {number} duration - Auto-dismiss duration in milliseconds (default: 4000)
+ */
+function showToast(message, type = 'info', title = null, duration = 4000) {
+    const container = document.getElementById('toast-container');
+    const template = document.getElementById('toast-template');
+    
+    if (!container || !template) {
+        console.warn('Toast container or template not found');
+        return;
+    }
+    
+    // Clone the template
+    const toast = template.cloneNode(true);
+    toast.id = 'toast-' + Date.now();
+    toast.style.display = 'block';
+    
+    // Configure toast based on type
+    const config = getToastConfig(type);
+    
+    // Set content
+    const titleElement = toast.querySelector('.toast-title');
+    const messageElement = toast.querySelector('.toast-message');
+    
+    if (title) {
+        titleElement.textContent = title;
+        titleElement.style.display = 'block';
+    } else {
+        titleElement.textContent = config.defaultTitle;
+        titleElement.style.display = 'block';
+    }
+    
+    messageElement.textContent = message;
+    
+    // Show appropriate icon
+    toast.querySelectorAll('[class*="toast-icon-"]').forEach(icon => {
+        icon.classList.add('hidden');
+    });
+    toast.querySelector(`.toast-icon-${type}`).classList.remove('hidden');
+    
+    // Set colors
+    const progressBar = toast.querySelector('.toast-progress-bar');
+    progressBar.className = `toast-progress-bar h-full transition-all ease-linear ${config.progressColor}`;
+    
+    // Add border color
+    const toastItem = toast.querySelector('.toast-item');
+    toastItem.classList.add(config.borderColor);
+    
+    // Add close functionality
+    const closeBtn = toast.querySelector('.toast-close');
+    closeBtn.addEventListener('click', () => {
+        dismissToast(toast);
+    });
+    
+    // Add to container with animation
+    container.appendChild(toast);
+    
+    // Trigger entrance animation
+    requestAnimationFrame(() => {
+        toast.classList.add('toast-enter-active');
+    });
+    
+    // Auto-dismiss with progress bar
+    if (duration > 0) {
+        const progressBar = toast.querySelector('.toast-progress-bar');
+        progressBar.style.width = '100%';
+        progressBar.style.transitionDuration = duration + 'ms';
+        
+        requestAnimationFrame(() => {
+            progressBar.style.width = '0%';
+        });
+        
+        setTimeout(() => {
+            dismissToast(toast);
+        }, duration);
+    }
+}
+
+/**
+ * Dismiss a toast notification
+ * @param {HTMLElement} toast - The toast element to dismiss
+ */
+function dismissToast(toast) {
+    if (!toast || !toast.parentNode) return;
+    
+    toast.classList.remove('toast-enter-active');
+    toast.classList.add('toast-exit-active');
+    
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 300);
+}
+
+/**
+ * Get configuration for different toast types
+ * @param {string} type - Toast type
+ * @returns {Object} Configuration object
+ */
+function getToastConfig(type) {
+    const configs = {
+        success: {
+            defaultTitle: 'Success',
+            progressColor: 'bg-green-400',
+            borderColor: 'border-l-4 border-l-green-400'
+        },
+        error: {
+            defaultTitle: 'Error',
+            progressColor: 'bg-red-400',
+            borderColor: 'border-l-4 border-l-red-400'
+        },
+        warning: {
+            defaultTitle: 'Warning',
+            progressColor: 'bg-yellow-400',
+            borderColor: 'border-l-4 border-l-yellow-400'
+        },
+        info: {
+            defaultTitle: 'Info',
+            progressColor: 'bg-blue-400',
+            borderColor: 'border-l-4 border-l-blue-400'
+        }
+    };
+    
+    return configs[type] || configs.info;
+}
+
+/**
+ * Show success toast
+ * @param {string} message - Success message
+ * @param {string} title - Optional title
+ */
+function showSuccessToast(message, title = null) {
+    showToast(message, 'success', title);
+}
+
+/**
+ * Show error toast
+ * @param {string} message - Error message
+ * @param {string} title - Optional title
+ */
+function showErrorToast(message, title = null) {
+    showToast(message, 'error', title, 6000); // Longer duration for errors
+}
+
+/**
+ * Show info toast
+ * @param {string} message - Info message
+ * @param {string} title - Optional title
+ */
+function showInfoToast(message, title = null) {
+    showToast(message, 'info', title);
+}
+
+/**
+ * Show warning toast
+ * @param {string} message - Warning message
+ * @param {string} title - Optional title
+ */
+function showWarningToast(message, title = null) {
+    showToast(message, 'warning', title, 5000);
+}
+
+/**
+ * Clear all toasts
+ */
+function clearAllToasts() {
+    const container = document.getElementById('toast-container');
+    if (container) {
+        const toasts = container.querySelectorAll('[id^="toast-"]');
+        toasts.forEach(toast => {
+            dismissToast(toast);
+        });
+    }
+}
+</script> 

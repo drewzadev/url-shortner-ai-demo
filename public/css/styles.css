@@ -1,0 +1,620 @@
+/**
+ * URL Shortener - Custom Styles
+ * Complementary styles for Tailwind CSS
+ * Includes animations, custom components, and responsive enhancements
+ */
+
+/* ==========================================================================
+   Base Styles & CSS Variables
+   ========================================================================== */
+
+:root {
+  /* Dark theme color palette */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-750: #2a3441;
+  --color-slate-800: #1e293b;
+  --color-slate-850: #1a202c;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+  
+  /* Brand colors */
+  --color-blue-400: #60a5fa;
+  --color-blue-500: #3b82f6;
+  --color-blue-600: #2563eb;
+  --color-blue-700: #1d4ed8;
+  --color-purple-500: #8b5cf6;
+  --color-purple-600: #7c3aed;
+  --color-purple-700: #6d28d9;
+  
+  /* Status colors */
+  --color-green-400: #4ade80;
+  --color-green-500: #22c55e;
+  --color-green-600: #16a34a;
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-yellow-400: #facc15;
+  --color-yellow-500: #eab308;
+  
+  /* Spacing and sizing */
+  --header-height: 80px;
+  --toast-width: 384px;
+  --mobile-breakpoint: 768px;
+  --tablet-breakpoint: 1024px;
+  
+  /* Animation durations */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  
+  /* Z-index layers */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+/* ==========================================================================
+   Custom Scrollbar (Dark Theme)
+   ========================================================================== */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-slate-800);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-slate-600);
+  border-radius: 4px;
+  transition: background-color var(--duration-fast) ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-slate-500);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--color-slate-800);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-slate-600) var(--color-slate-800);
+}
+
+/* ==========================================================================
+   Loading Animations
+   ========================================================================== */
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   Utility Classes
+   ========================================================================== */
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--duration-normal) ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight var(--duration-normal) ease-out;
+}
+
+.animate-slide-out-right {
+  animation: slideOutRight var(--duration-normal) ease-in;
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--duration-fast) ease-out;
+}
+
+/* ==========================================================================
+   Toast Notifications
+   ========================================================================== */
+
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: var(--z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.toast-item {
+  pointer-events: auto;
+  max-width: var(--toast-width);
+  width: 100%;
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all var(--duration-normal) ease-out;
+}
+
+.toast-item.toast-enter-active {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.toast-item.toast-exit-active {
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all var(--duration-normal) ease-in;
+}
+
+.toast-progress-bar {
+  transition: width linear;
+}
+
+/* Mobile toast positioning */
+@media (max-width: 767px) {
+  .toast-container {
+    top: 1rem;
+    left: 1rem;
+    right: 1rem;
+    width: auto;
+  }
+  
+  .toast-item {
+    max-width: none;
+    transform: translateY(-100%);
+  }
+  
+  .toast-item.toast-enter-active {
+    transform: translateY(0);
+  }
+  
+  .toast-item.toast-exit-active {
+    transform: translateY(-100%);
+  }
+}
+
+/* ==========================================================================
+   Form Components
+   ========================================================================== */
+
+.form-expand {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--duration-normal) ease-out;
+}
+
+.form-expand.expanded {
+  max-height: 300px; /* Increased for better mobile support */
+}
+
+/* Enhanced focus states */
+.form-input:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: var(--color-blue-500);
+  ring-opacity: 0.5;
+  border-color: var(--color-blue-500);
+}
+
+.form-input.error {
+  border-color: var(--color-red-500);
+  ring-color: var(--color-red-500);
+}
+
+.form-input.warning {
+  border-color: var(--color-yellow-500);
+  ring-color: var(--color-yellow-500);
+}
+
+/* Button hover effects */
+.btn-hover-lift {
+  transition: transform var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
+}
+
+.btn-hover-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-hover-lift:active {
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   URL Display Components
+   ========================================================================== */
+
+.url-truncate {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 767px) {
+  .url-truncate {
+    max-width: 150px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .url-truncate {
+    max-width: 300px;
+  }
+}
+
+/* URL hover tooltip */
+.url-tooltip {
+  position: relative;
+}
+
+.url-tooltip:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-slate-700);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  z-index: var(--z-tooltip);
+  animation: fadeIn var(--duration-fast) ease-out;
+  pointer-events: none;
+  max-width: 300px;
+  word-break: break-all;
+  white-space: normal;
+}
+
+/* ==========================================================================
+   Table Enhancements
+   ========================================================================== */
+
+.table-hover-row {
+  transition: background-color var(--duration-fast) ease;
+}
+
+.table-hover-row:hover {
+  background-color: rgba(51, 65, 85, 0.3); /* slate-700/30 */
+}
+
+/* Responsive table wrapper */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ==========================================================================
+   Card Components
+   ========================================================================== */
+
+.card-hover {
+  transition: all var(--duration-fast) ease;
+}
+
+.card-hover:hover {
+  background-color: rgba(51, 65, 85, 0.3); /* slate-700/30 */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ==========================================================================
+   Loading States
+   ========================================================================== */
+
+.loading-overlay {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.skeleton-loading {
+  background: linear-gradient(
+    90deg,
+    var(--color-slate-700) 25%,
+    var(--color-slate-600) 50%,
+    var(--color-slate-700) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ==========================================================================
+   Responsive Design Enhancements
+   ========================================================================== */
+
+/* Mobile-first responsive utilities */
+@media (max-width: 767px) {
+  .mobile-full-width {
+    width: 100%;
+  }
+  
+  .mobile-text-center {
+    text-align: center;
+  }
+  
+  .mobile-hidden {
+    display: none;
+  }
+  
+  .mobile-stack {
+    flex-direction: column;
+  }
+  
+  .mobile-gap-2 {
+    gap: 0.5rem;
+  }
+  
+  .mobile-p-4 {
+    padding: 1rem;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .tablet-hidden {
+    display: none;
+  }
+  
+  .url-truncate {
+    max-width: 250px;
+  }
+}
+
+/* Desktop enhancements */
+@media (min-width: 1024px) {
+  .desktop-hover-effects {
+    transition: all var(--duration-fast) ease;
+  }
+  
+  .desktop-hover-effects:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* ==========================================================================
+   Accessibility Enhancements
+   ========================================================================== */
+
+/* Focus indicators */
+.focus-visible:focus {
+  outline: 2px solid var(--color-blue-500);
+  outline-offset: 2px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .spinner {
+    animation: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .bg-slate-800 {
+    background-color: #000000;
+  }
+  
+  .text-gray-300 {
+    color: #ffffff;
+  }
+  
+  .border-gray-600 {
+    border-color: #ffffff;
+  }
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break-inside-avoid {
+    break-inside: avoid;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .bg-slate-800,
+  .bg-slate-700 {
+    background: white !important;
+    border: 1px solid #ccc !important;
+  }
+}
+
+/* ==========================================================================
+   Custom Component Classes
+   ========================================================================== */
+
+/* Enhanced gradient backgrounds */
+.gradient-bg-primary {
+  background: linear-gradient(135deg, var(--color-blue-600), var(--color-purple-600));
+}
+
+.gradient-bg-secondary {
+  background: linear-gradient(135deg, var(--color-slate-800), var(--color-slate-700));
+}
+
+/* Glass morphism effect */
+.glass-effect {
+  background: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Subtle shadows */
+.shadow-subtle {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-medium {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-large {
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* ==========================================================================
+   Performance Optimizations
+   ========================================================================== */
+
+/* GPU acceleration for animations */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Optimize repaints */
+.optimize-repaint {
+  contain: layout style paint;
+}
+
+/* ==========================================================================
+   Browser-specific Fixes
+   ========================================================================== */
+
+/* Safari fixes */
+@supports (-webkit-appearance: none) {
+  .safari-fix-backdrop {
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+/* Firefox fixes */
+@-moz-document url-prefix() {
+  .firefox-fix-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-slate-600) var(--color-slate-800);
+  }
+}
+
+/* Edge fixes */
+@supports (-ms-ime-align: auto) {
+  .edge-fix-grid {
+    display: -ms-grid;
+  }
+} 
