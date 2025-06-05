@@ -1,0 +1,13 @@
+{
+  "body": {
+    "content": "eyJ1cmwiOiAiaHR0cHM6Ly93d3cueW9jby5jb20ifQ==",
+    "file": false,
+    "fileSize": false
+  },
+  "headers": {
+    "content-type": "application/json"
+  },
+  "method": "POST",
+  "title": "Shorten URL",
+  "url": "http://localhost:3000/api/shorten"
+}

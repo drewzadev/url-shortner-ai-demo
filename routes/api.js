@@ -72,14 +72,25 @@ export default function createApiRoutes(database, redis, logger) {
 
   // Single URL shortening endpoint
   router.post('/shorten', async (req, res, next) => {
+    const requestId = Math.random().toString(36).substring(7)
+    const startTime = Date.now()
+    
     try {
       logger.info(logPrefix, 'Single URL shortening request received', { 
-        body: req.body 
+        requestId,
+        body: req.body,
+        userAgent: req.headers['user-agent'],
+        ip: req.ip
       })
       
       // Validate request body
       const bodyValidation = validateRequestBody(req.body)
       if (bodyValidation) {
+        logger.warn(logPrefix, 'Request body validation failed', {
+          requestId,
+          error: bodyValidation.error,
+          body: req.body
+        })
         return res.status(bodyValidation.status_code).json(bodyValidation)
       }
 
@@ -87,6 +98,11 @@ export default function createApiRoutes(database, redis, logger) {
       const urlValidation = validateUrl(req.body.url)
       if (!urlValidation.isValid) {
         const errorResponse = createValidationErrorResponse(urlValidation, 'single URL validation')
+        logger.warn(logPrefix, 'URL validation failed', {
+          requestId,
+          url: req.body.url,
+          validation: urlValidation
+        })
         return res.status(400).json(createErrorResponse(
           'INVALID_URL',
           errorResponse.error,
@@ -99,22 +115,32 @@ export default function createApiRoutes(database, redis, logger) {
       const [error, result] = await __(urlService.createShortUrl(req.body.url))
       
       if (error) {
+        const responseTime = Date.now() - startTime
         logger.error(logPrefix, 'Failed to create short URL', { 
+          requestId,
           error: error.message,
-          originalUrl: req.body.url 
+          originalUrl: req.body.url,
+          responseTime,
+          errorType: _categorizeError(error)
         })
         
-        return res.status(400).json(createErrorResponse(
+        // Determine appropriate status code based on error type
+        const statusCode = _getStatusCodeForError(error)
+        
+        return res.status(statusCode).json(createErrorResponse(
           'URL_CREATION_FAILED',
           error.message,
           [error.message],
-          400
+          statusCode
         ))
       }
 
+      const responseTime = Date.now() - startTime
       logger.info(logPrefix, 'Successfully created short URL', { 
+        requestId,
         shortCode: result.shortCode,
-        originalUrl: result.originalUrl 
+        originalUrl: result.originalUrl,
+        responseTime
       })
 
       res.status(201).json(createSuccessResponse(
@@ -123,20 +149,38 @@ export default function createApiRoutes(database, redis, logger) {
         201
       ))
     } catch (error) {
+      const responseTime = Date.now() - startTime
+      logger.error(logPrefix, 'Unexpected error in URL shortening', {
+        requestId,
+        error: error.message,
+        stack: error.stack,
+        responseTime
+      })
       next(error)
     }
   })
 
   // Bulk URL shortening endpoint
   router.post('/shorten/bulk', async (req, res, next) => {
+    const requestId = Math.random().toString(36).substring(7)
+    const startTime = Date.now()
+    
     try {
       logger.info(logPrefix, 'Bulk URL shortening request received', { 
-        urlCount: req.body?.urls?.length 
+        requestId,
+        urlCount: req.body?.urls?.length,
+        userAgent: req.headers['user-agent'],
+        ip: req.ip
       })
       
       // Validate request body
       const bodyValidation = validateRequestBody(req.body)
       if (bodyValidation) {
+        logger.warn(logPrefix, 'Bulk request body validation failed', {
+          requestId,
+          error: bodyValidation.error,
+          bodyKeys: Object.keys(req.body || {})
+        })
         return res.status(bodyValidation.status_code).json(bodyValidation)
       }
 
@@ -144,6 +188,11 @@ export default function createApiRoutes(database, redis, logger) {
       const sizeValidation = validateRequestSize(req.body)
       if (!sizeValidation.isValid) {
         const errorResponse = createValidationErrorResponse(sizeValidation, 'request size validation')
+        logger.warn(logPrefix, 'Bulk request size validation failed', {
+          requestId,
+          urlCount: req.body?.urls?.length,
+          validation: sizeValidation
+        })
         return res.status(400).json(createErrorResponse(
           'REQUEST_SIZE_EXCEEDED',
           errorResponse.error,
@@ -156,6 +205,11 @@ export default function createApiRoutes(database, redis, logger) {
       const urlsValidation = validateBulkUrls(req.body.urls)
       if (!urlsValidation.isValid) {
         const errorResponse = createValidationErrorResponse(urlsValidation, 'bulk URLs validation')
+        logger.warn(logPrefix, 'Bulk URLs validation failed', {
+          requestId,
+          urlCount: req.body.urls?.length,
+          validation: urlsValidation
+        })
         return res.status(400).json(createErrorResponse(
           'BULK_URL_VALIDATION_FAILED',
           errorResponse.error,
@@ -168,22 +222,32 @@ export default function createApiRoutes(database, redis, logger) {
       const [error, result] = await __(urlService.createBulkShortUrls(req.body.urls))
       
       if (error) {
+        const responseTime = Date.now() - startTime
         logger.error(logPrefix, 'Failed to create bulk short URLs', { 
+          requestId,
           error: error.message,
-          urlCount: req.body.urls.length 
+          urlCount: req.body.urls.length,
+          responseTime,
+          errorType: _categorizeError(error)
         })
         
-        return res.status(400).json(createErrorResponse(
+        // Determine appropriate status code based on error type
+        const statusCode = _getStatusCodeForError(error)
+        
+        return res.status(statusCode).json(createErrorResponse(
           'BULK_URL_CREATION_FAILED',
           error.message,
           [error.message],
-          400
+          statusCode
         ))
       }
 
+      const responseTime = Date.now() - startTime
       logger.info(logPrefix, 'Successfully created bulk short URLs', { 
+        requestId,
         successCount: result.successCount,
-        failureCount: result.failureCount 
+        failureCount: result.failureCount,
+        responseTime
       })
 
       res.status(201).json(createSuccessResponse(
@@ -192,6 +256,14 @@ export default function createApiRoutes(database, redis, logger) {
         201
       ))
     } catch (error) {
+      const responseTime = Date.now() - startTime
+      logger.error(logPrefix, 'Unexpected error in bulk URL shortening', {
+        requestId,
+        error: error.message,
+        stack: error.stack,
+        urlCount: req.body?.urls?.length,
+        responseTime
+      })
       next(error)
     }
   })
@@ -362,6 +434,67 @@ export default function createApiRoutes(database, redis, logger) {
       next(error)
     }
   })
+
+  /**
+   * Categorize error types for better logging and monitoring
+   * @param {Error} error - The error object
+   * @returns {string} Error category
+   */
+  const _categorizeError = (error) => {
+    const message = error.message?.toLowerCase() || ''
+    
+    if (message.includes('database service unavailable') || 
+        message.includes('database connection') ||
+        message.includes('database health check failed')) {
+      return 'database_unavailable'
+    }
+    
+    if (message.includes('redis') || 
+        message.includes('cache')) {
+      return 'redis_error'
+    }
+    
+    if (message.includes('validation') || 
+        message.includes('invalid')) {
+      return 'validation_error'
+    }
+    
+    if (message.includes('not found') || 
+        message.includes('does not exist')) {
+      return 'not_found'
+    }
+    
+    if (message.includes('collision') || 
+        message.includes('unique constraint')) {
+      return 'constraint_violation'
+    }
+    
+    return 'unknown_error'
+  }
+
+  /**
+   * Determine appropriate HTTP status code based on error type
+   * @param {Error} error - The error object
+   * @returns {number} HTTP status code
+   */
+  const _getStatusCodeForError = (error) => {
+    const errorType = _categorizeError(error)
+    
+    switch (errorType) {
+      case 'database_unavailable':
+        return 503 // Service Unavailable
+      case 'validation_error':
+        return 400 // Bad Request
+      case 'not_found':
+        return 404 // Not Found
+      case 'constraint_violation':
+        return 409 // Conflict
+      case 'redis_error':
+        return 500 // Internal Server Error (but operation can continue)
+      default:
+        return 500 // Internal Server Error
+    }
+  }
 
   return router
 }

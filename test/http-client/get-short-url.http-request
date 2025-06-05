@@ -1,0 +1,11 @@
+{
+  "body": {
+    "content": "",
+    "file": false,
+    "fileSize": false
+  },
+  "headers": {},
+  "method": "GET",
+  "title": "Get Short URL",
+  "url": "http://localhost:3000/api/url/rW0kr"
+}

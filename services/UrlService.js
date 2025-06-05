@@ -72,17 +72,25 @@ class UrlService {
       throw new Error(validation.error)
     }
 
-    // Get short code from pool
-    const [shortCodeError, shortCodeResult] = await __(this.redis.getShortCode())
+    // Check database connectivity before proceeding
+    const [dbHealthError] = await __(this._checkDatabaseHealth())
+    if (dbHealthError) {
+      this.logger.error(this.logPrefix, 'Database health check failed', dbHealthError)
+      throw new Error('Database service unavailable')
+    }
+
+    // Get short code from pool with Redis failure handling
+    const [shortCodeError, shortCodeResult] = await __(this._getShortCodeWithFallback())
     if (shortCodeError) {
-      this.logger.error(this.logPrefix, 'Failed to get short code from pool', shortCodeError)
+      this.logger.error(this.logPrefix, 'Failed to get short code with fallback', shortCodeError)
       throw new Error('Failed to generate short code')
     }
 
-    const shortCode = shortCodeResult.code
+    let shortCode = shortCodeResult.code
     this.logger.debug(this.logPrefix, 'Retrieved short code', { 
       shortCode, 
-      source: shortCodeResult.source 
+      source: shortCodeResult.source,
+      redisAvailable: shortCodeResult.source !== 'fallback'
     })
 
     // Calculate expiration date
@@ -120,7 +128,7 @@ class UrlService {
         
         if (attempts < maxAttempts) {
           // Get a new short code and try again
-          const [retryShortCodeError, retryShortCodeResult] = await __(this.redis.getShortCode())
+          const [retryShortCodeError, retryShortCodeResult] = await __(this._getShortCodeWithFallback())
           if (retryShortCodeError) {
             this.logger.error(this.logPrefix, 'Failed to get retry short code', retryShortCodeError)
             throw new Error('Failed to generate short code after collision')
@@ -128,6 +136,12 @@ class UrlService {
           shortCode = retryShortCodeResult.code
           continue
         }
+      }
+
+      // Handle database connection errors
+      if (this._isDatabaseConnectionError(createError)) {
+        this.logger.error(this.logPrefix, 'Database connection error during URL creation', createError)
+        throw new Error('Database service unavailable')
       }
 
       this.logger.error(this.logPrefix, 'Failed to create URL in database', createError)
@@ -141,19 +155,8 @@ class UrlService {
       throw new Error('Failed to create shortened URL after multiple attempts')
     }
 
-    // Cache the URL mapping
-    const [cacheError] = await __(this.redis.cacheUrl(
-      shortCode, 
-      originalUrl, 
-      appConfig.url?.cacheTtlSeconds || 3600
-    ))
-    
-    if (cacheError) {
-      this.logger.warn(this.logPrefix, 'Failed to cache URL, continuing without cache', { 
-        shortCode, 
-        error: cacheError.message 
-      })
-    }
+    // Cache the URL mapping (graceful degradation if Redis fails)
+    await this._cacheUrlGracefully(shortCode, originalUrl)
 
     this.logger.info(this.logPrefix, 'Successfully created short URL', {
       id: createdUrl.id,
@@ -205,10 +208,17 @@ class UrlService {
       throw new Error(validation.error)
     }
 
-    // Get all needed short codes upfront
+    // Check database connectivity before proceeding
+    const [dbHealthError] = await __(this._checkDatabaseHealth())
+    if (dbHealthError) {
+      this.logger.error(this.logPrefix, 'Database health check failed for bulk operation', dbHealthError)
+      throw new Error('Database service unavailable')
+    }
+
+    // Get all needed short codes upfront with fallback handling
     const shortCodes = []
     for (let i = 0; i < urls.length; i++) {
-      const [shortCodeError, shortCodeResult] = await __(this.redis.getShortCode())
+      const [shortCodeError, shortCodeResult] = await __(this._getShortCodeWithFallback())
       if (shortCodeError) {
         this.logger.error(this.logPrefix, 'Failed to get short code for bulk operation', shortCodeError)
         throw new Error(`Failed to generate short code for URL at index ${i}`)
@@ -232,7 +242,7 @@ class UrlService {
       expiresAt
     }))
 
-    // Create all URLs in a single transaction
+    // Create all URLs in a single transaction with enhanced error handling
     const [transactionError, createdUrls] = await __(
       this.database.getClient().$transaction(async (prisma) => {
         const results = []
@@ -249,6 +259,11 @@ class UrlService {
     if (transactionError) {
       this.logger.error(this.logPrefix, 'Bulk URL creation transaction failed', transactionError)
       
+      // Handle database connection errors
+      if (this._isDatabaseConnectionError(transactionError)) {
+        throw new Error('Database service unavailable during bulk operation')
+      }
+      
       // Handle unique constraint violations specifically
       if (transactionError.code === 'P2002' && transactionError.meta?.target?.includes('shortCode')) {
         throw new Error('Short code collision occurred during bulk operation')
@@ -259,18 +274,7 @@ class UrlService {
 
     // Cache all URLs (best effort - don't fail if caching fails)
     const cachePromises = createdUrls.map(async (url) => {
-      const [cacheError] = await __(this.redis.cacheUrl(
-        url.shortCode, 
-        url.originalUrl, 
-        appConfig.url?.cacheTtlSeconds || 3600
-      ))
-      
-      if (cacheError) {
-        this.logger.warn(this.logPrefix, 'Failed to cache URL in bulk operation', { 
-          shortCode: url.shortCode, 
-          error: cacheError.message 
-        })
-      }
+      await this._cacheUrlGracefully(url.shortCode, url.originalUrl)
     })
 
     // Wait for all cache operations to complete (but don't fail on cache errors)
@@ -293,11 +297,10 @@ class UrlService {
     }))
 
     return {
-      successful,
-      failed: [], // All-or-nothing transaction means no partial failures
-      totalCount: urls.length,
       successCount: successful.length,
-      failureCount: 0
+      failureCount: 0,
+      successful,
+      failed: []
     }
   }
 
@@ -314,86 +317,80 @@ class UrlService {
       throw new Error('Short code is required and must be a string')
     }
 
-    // First try to get from cache
-    const [cacheError, cachedUrl] = await __(this.redis.getCachedUrl(shortCode))
-    
-    if (!cacheError && cachedUrl) {
-      this.logger.debug(this.logPrefix, 'URL found in cache', { shortCode })
-      
-      // Still need to get full details from database for complete response
-      const [dbError, urlFromDb] = await __(this.database.getClient().url.findUnique({
-        where: { shortCode }
-      }))
-      
-      if (!dbError && urlFromDb) {
-        return {
-          id: urlFromDb.id,
-          originalUrl: urlFromDb.originalUrl,
-          shortCode: urlFromDb.shortCode,
-          shortUrl: this._buildShortUrl(urlFromDb.shortCode),
-          createdAt: urlFromDb.createdAt,
-          expiresAt: urlFromDb.expiresAt,
-          clickCount: urlFromDb.clickCount
-        }
-      }
+    // Check database connectivity before proceeding
+    const [dbHealthError] = await __(this._checkDatabaseHealth())
+    if (dbHealthError) {
+      this.logger.error(this.logPrefix, 'Database health check failed', dbHealthError)
+      throw new Error('Database service unavailable')
     }
 
-    // Cache miss or error, fall back to database
-    this.logger.debug(this.logPrefix, 'Cache miss, checking database', { 
-      shortCode, 
-      cacheError: cacheError?.message 
-    })
+    // First try to get from cache (graceful degradation if Redis fails)
+    let cachedUrl = null
+    if (this.redis && this.redis.isConnected) {
+      const [cacheError, cachedResult] = await __(this.redis.getCachedUrl(shortCode))
+      
+      if (!cacheError && cachedResult) {
+        cachedUrl = cachedResult
+        this.logger.debug(this.logPrefix, 'URL found in cache', { shortCode })
+      } else if (cacheError) {
+        this.logger.warn(this.logPrefix, 'Cache lookup failed, falling back to database', { 
+          shortCode, 
+          error: cacheError.message 
+        })
+      }
+    } else {
+      this.logger.debug(this.logPrefix, 'Redis not available, checking database directly', { shortCode })
+    }
 
-    const [dbError, url] = await __(this.database.getClient().url.findUnique({
+    // Get full details from database (either for cache validation or direct lookup)
+    const [dbError, urlFromDb] = await __(this.database.getClient().url.findUnique({
       where: { shortCode }
     }))
 
     if (dbError) {
+      // Handle database connection errors
+      if (this._isDatabaseConnectionError(dbError)) {
+        this.logger.error(this.logPrefix, 'Database connection error while getting URL', dbError)
+        throw new Error('Database service unavailable')
+      }
+      
       this.logger.error(this.logPrefix, 'Database error while getting URL', dbError)
       throw new Error('Failed to retrieve URL')
     }
 
-    if (!url) {
+    if (!urlFromDb) {
       this.logger.debug(this.logPrefix, 'URL not found', { shortCode })
       return null
     }
 
     // Check if URL has expired
-    if (moment().isAfter(url.expiresAt)) {
+    if (moment().isAfter(urlFromDb.expiresAt)) {
       this.logger.debug(this.logPrefix, 'URL has expired', { 
         shortCode, 
-        expiresAt: url.expiresAt 
+        expiresAt: urlFromDb.expiresAt 
       })
       return null
     }
 
-    // Cache the URL for future requests (best effort)
-    const [updateCacheError] = await __(this.redis.cacheUrl(
-      shortCode, 
-      url.originalUrl, 
-      appConfig.url?.cacheTtlSeconds || 3600
-    ))
-    
-    if (updateCacheError) {
-      this.logger.warn(this.logPrefix, 'Failed to update cache after database lookup', { 
-        shortCode, 
-        error: updateCacheError.message 
-      })
+    // Cache the URL for future requests (graceful degradation if Redis fails)
+    if (!cachedUrl) {
+      await this._cacheUrlGracefully(shortCode, urlFromDb.originalUrl)
     }
 
-    this.logger.debug(this.logPrefix, 'URL found in database', { 
+    this.logger.debug(this.logPrefix, 'URL found and retrieved', { 
       shortCode, 
-      originalUrl: url.originalUrl 
+      originalUrl: urlFromDb.originalUrl,
+      cacheHit: !!cachedUrl
     })
 
     return {
-      id: url.id,
-      originalUrl: url.originalUrl,
-      shortCode: url.shortCode,
-      shortUrl: this._buildShortUrl(url.shortCode),
-      createdAt: url.createdAt,
-      expiresAt: url.expiresAt,
-      clickCount: url.clickCount
+      id: urlFromDb.id,
+      originalUrl: urlFromDb.originalUrl,
+      shortCode: urlFromDb.shortCode,
+      shortUrl: this._buildShortUrl(urlFromDb.shortCode),
+      createdAt: urlFromDb.createdAt,
+      expiresAt: urlFromDb.expiresAt,
+      clickCount: urlFromDb.clickCount
     }
   }
 
@@ -410,12 +407,25 @@ class UrlService {
       throw new Error('Short code is required and must be a string')
     }
 
+    // Check database connectivity before proceeding
+    const [dbHealthError] = await __(this._checkDatabaseHealth())
+    if (dbHealthError) {
+      this.logger.error(this.logPrefix, 'Database health check failed for deletion', dbHealthError)
+      throw new Error('Database service unavailable')
+    }
+
     // First check if the URL exists
     const [findError, existingUrl] = await __(this.database.getClient().url.findUnique({
       where: { shortCode }
     }))
 
     if (findError) {
+      // Handle database connection errors
+      if (this._isDatabaseConnectionError(findError)) {
+        this.logger.error(this.logPrefix, 'Database connection error while checking URL existence', findError)
+        throw new Error('Database service unavailable')
+      }
+      
       this.logger.error(this.logPrefix, 'Database error while checking URL existence', findError)
       throw new Error('Failed to delete URL')
     }
@@ -431,19 +441,18 @@ class UrlService {
     }))
 
     if (deleteError) {
+      // Handle database connection errors
+      if (this._isDatabaseConnectionError(deleteError)) {
+        this.logger.error(this.logPrefix, 'Database connection error during deletion', deleteError)
+        throw new Error('Database service unavailable')
+      }
+      
       this.logger.error(this.logPrefix, 'Failed to delete URL from database', deleteError)
       throw new Error('Failed to delete URL')
     }
 
-    // Remove from cache (best effort - don't fail if cache removal fails)
-    const [cacheError] = await __(this.redis.removeCachedUrl(shortCode))
-    
-    if (cacheError) {
-      this.logger.warn(this.logPrefix, 'Failed to remove URL from cache, continuing', { 
-        shortCode, 
-        error: cacheError.message 
-      })
-    }
+    // Remove from cache (graceful degradation - don't fail if cache removal fails)
+    await this._removeCachedUrlGracefully(shortCode)
 
     this.logger.info(this.logPrefix, 'Successfully deleted URL', { 
       shortCode, 
@@ -461,11 +470,24 @@ class UrlService {
   async getAllUrls() {
     this.logger.debug(this.logPrefix, 'Getting all URLs')
 
+    // Check database connectivity before proceeding
+    const [dbHealthError] = await __(this._checkDatabaseHealth())
+    if (dbHealthError) {
+      this.logger.error(this.logPrefix, 'Database health check failed for getAllUrls', dbHealthError)
+      throw new Error('Database service unavailable')
+    }
+
     const [error, urls] = await __(this.database.getClient().url.findMany({
       orderBy: { createdAt: 'desc' }
     }))
 
     if (error) {
+      // Handle database connection errors
+      if (this._isDatabaseConnectionError(error)) {
+        this.logger.error(this.logPrefix, 'Database connection error while retrieving URLs', error)
+        throw new Error('Database service unavailable')
+      }
+      
       this.logger.error(this.logPrefix, 'Failed to retrieve all URLs', error)
       throw new Error('Failed to retrieve URLs')
     }
@@ -507,6 +529,13 @@ class UrlService {
       throw new Error('Short code is required and must be a string')
     }
 
+    // Check database connectivity before proceeding
+    const [dbHealthError] = await __(this._checkDatabaseHealth())
+    if (dbHealthError) {
+      this.logger.error(this.logPrefix, 'Database health check failed for click increment', dbHealthError)
+      throw new Error('Database service unavailable')
+    }
+
     const [error, updatedUrl] = await __(this.database.getClient().url.update({
       where: { shortCode },
       data: {
@@ -523,6 +552,12 @@ class UrlService {
         return null
       }
       
+      // Handle database connection errors
+      if (this._isDatabaseConnectionError(error)) {
+        this.logger.error(this.logPrefix, 'Database connection error during click increment', error)
+        throw new Error('Database service unavailable')
+      }
+      
       this.logger.error(this.logPrefix, 'Failed to increment click count', error)
       throw new Error('Failed to increment click count')
     }
@@ -533,6 +568,160 @@ class UrlService {
     })
 
     return updatedUrl.clickCount
+  }
+
+  /**
+   * Get short code with graceful Redis failure handling
+   * Falls back to generating codes locally if Redis is unavailable
+   * 
+   * @returns {Object} Short code result with source information
+   */
+  async _getShortCodeWithFallback() {
+    // First try Redis if available
+    if (this.redis && this.redis.isConnected) {
+      try {
+        const result = await this.redis.getShortCode()
+        this.logger.debug(this.logPrefix, 'Successfully got short code from Redis', {
+          source: result.source,
+          responseTime: result.responseTime
+        })
+        return result
+      } catch (error) {
+        this.logger.warn(this.logPrefix, 'Redis getShortCode failed, falling back to local generation', {
+          error: error.message
+        })
+        // Continue to fallback below
+      }
+    } else {
+      this.logger.debug(this.logPrefix, 'Redis not connected, using local short code generation')
+    }
+
+    // Fallback to local generation
+    const fallbackCode = this._generateFallbackShortCode()
+    return {
+      code: fallbackCode,
+      source: 'local_fallback',
+      responseTime: 0,
+      redisUnavailable: true
+    }
+  }
+
+  /**
+   * Generate a fallback short code when Redis is unavailable
+   * 
+   * @returns {string} Generated short code
+   */
+  _generateFallbackShortCode() {
+    const chars = appConfig.shortCode?.charset || 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    const length = appConfig.shortCode?.length || 6
+    let result = ''
+    
+    for (let i = 0; i < length; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    
+    return result
+  }
+
+  /**
+   * Cache URL with graceful degradation - doesn't fail if Redis is unavailable
+   * 
+   * @param {string} shortCode - Short code to cache
+   * @param {string} originalUrl - Original URL to cache
+   */
+  async _cacheUrlGracefully(shortCode, originalUrl) {
+    if (!this.redis || !this.redis.isConnected) {
+      this.logger.debug(this.logPrefix, 'Redis not available, skipping URL caching', { shortCode })
+      return
+    }
+
+    const [cacheError] = await __(this.redis.cacheUrl(
+      shortCode, 
+      originalUrl, 
+      appConfig.url?.cacheTtlSeconds || 3600
+    ))
+    
+    if (cacheError) {
+      this.logger.warn(this.logPrefix, 'Failed to cache URL, continuing without cache', { 
+        shortCode, 
+        error: cacheError.message 
+      })
+    } else {
+      this.logger.debug(this.logPrefix, 'Successfully cached URL', { shortCode })
+    }
+  }
+
+  /**
+   * Remove URL from cache with graceful degradation
+   * 
+   * @param {string} shortCode - Short code to remove from cache
+   */
+  async _removeCachedUrlGracefully(shortCode) {
+    if (!this.redis || !this.redis.isConnected) {
+      this.logger.debug(this.logPrefix, 'Redis not available, skipping cache removal', { shortCode })
+      return
+    }
+
+    const [cacheError] = await __(this.redis.removeCachedUrl(shortCode))
+    
+    if (cacheError) {
+      this.logger.warn(this.logPrefix, 'Failed to remove URL from cache, continuing', { 
+        shortCode, 
+        error: cacheError.message 
+      })
+    } else {
+      this.logger.debug(this.logPrefix, 'Successfully removed URL from cache', { shortCode })
+    }
+  }
+
+  /**
+   * Check database health with timeout
+   * 
+   * @returns {Promise} Resolves if healthy, rejects if unhealthy
+   */
+  async _checkDatabaseHealth() {
+    if (!this.database || !this.database.isConnected) {
+      throw new Error('Database service not connected')
+    }
+
+    // Use database health check with timeout
+    const healthCheckTimeout = appConfig.database?.healthCheckTimeout || 5000
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Database health check timeout')), healthCheckTimeout)
+    })
+
+    const healthPromise = this.database.healthCheck()
+    
+    return Promise.race([healthPromise, timeoutPromise])
+  }
+
+  /**
+   * Check if error is a database connection error
+   * 
+   * @param {Error} error - Error to check
+   * @returns {boolean} True if it's a connection error
+   */
+  _isDatabaseConnectionError(error) {
+    const connectionErrorCodes = [
+      'P1001', // Can't reach database server
+      'P1002', // Database server unreachable  
+      'P1003', // Database file doesn't exist
+      'P1008', // Operations timed out
+      'P1017'  // Server closed connection
+    ]
+    
+    const connectionErrorMessages = [
+      'connection',
+      'timeout',
+      'unreachable',
+      'refused',
+      'closed'
+    ]
+
+    return connectionErrorCodes.includes(error.code) ||
+           connectionErrorMessages.some(msg => 
+             error.message?.toLowerCase().includes(msg)
+           )
   }
 }
 
