@@ -1,19 +1,19 @@
 import redis from 'redis'
 import __ from '../libs/attempt.mjs'
-import logger from '../config/logger.js'
+import { appConfig } from '../config/app.js'
 
 class RedisService {
-  constructor() {
+  constructor(logger) {
     this.client = null
     this.isConnected = false
     this.logPrefix = 'RedisService'
     this.logger = logger
-    this.shortCodePoolKey = 'url_shortener:short_codes'
-    this.urlCachePrefix = 'url_shortener:cache:'
+    this.shortCodePoolKey = `${appConfig.redis.keyPrefix}short_codes`
+    this.urlCachePrefix = `${appConfig.redis.keyPrefix}cache:`
   }
 
   async connect() {
-    const maxRetries = 3
+    const maxRetries = appConfig.redis.retryAttempts
     let lastError
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -30,7 +30,7 @@ class RedisService {
       this.logger.warn(this.logPrefix, `Redis connection attempt ${attempt} failed: ${error.message}`)
       
       if (attempt < maxRetries) {
-        const delay = Math.pow(2, attempt) * 1000 // Exponential backoff
+        const delay = Math.pow(2, attempt) * appConfig.redis.retryDelay
         await new Promise(resolve => setTimeout(resolve, delay))
       }
     }
@@ -40,15 +40,16 @@ class RedisService {
   }
 
   async _createConnection() {
-    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379'
+    const redisUrl = process.env.REDIS_URL || `redis://${appConfig.redis.host}:${appConfig.redis.port}/${appConfig.redis.database}`
     
     const client = redis.createClient({
       url: redisUrl,
+      password: appConfig.redis.password,
       socket: {
-        connectTimeout: 3000,
-        commandTimeout: 5000,
+        connectTimeout: appConfig.redis.connectTimeout,
+        commandTimeout: appConfig.redis.commandTimeout,
         lazyConnect: true,
-        reconnectDelayOnFailure: () => 1000,
+        reconnectDelayOnFailure: () => appConfig.redis.retryDelay,
         maxRetriesPerRequest: 1
       },
       retryDelayOnFailover: 100,
@@ -79,7 +80,7 @@ class RedisService {
     // Add connection timeout
     const connectPromise = client.connect()
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Redis connection timeout after 3 seconds')), 3000)
+      setTimeout(() => reject(new Error(`Redis connection timeout after ${appConfig.redis.connectTimeout}ms`)), appConfig.redis.connectTimeout)
     })
 
     await Promise.race([connectPromise, timeoutPromise])
@@ -184,10 +185,10 @@ class RedisService {
         })
         
         // Check if pool is running low
-        if (!sizeError && poolSize <= (parseInt(process.env.SHORT_CODE_REPLENISH_THRESHOLD) || 5000)) {
+        if (!sizeError && poolSize <= appConfig.shortCode.replenishThreshold) {
           this.logger.warn(this.logPrefix, 'Short code pool running low', { 
             remainingPoolSize: poolSize,
-            threshold: parseInt(process.env.SHORT_CODE_REPLENISH_THRESHOLD) || 5000
+            threshold: appConfig.shortCode.replenishThreshold
           })
         }
         
@@ -239,9 +240,9 @@ class RedisService {
 
   _generateFallbackShortCode() {
     // Simple fallback short code generation
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    const chars = appConfig.shortCode.charset
     let result = ''
-    const length = parseInt(process.env.SHORT_CODE_LENGTH) || 5
+    const length = appConfig.shortCode.length
     
     for (let i = 0; i < length; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length))

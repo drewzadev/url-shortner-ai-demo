@@ -1,8 +1,7 @@
-import logger from '../config/logger.js'
 import moment from 'moment'
 
 class LoggingMiddleware {
-  constructor() {
+  constructor(logger) {
     this.logPrefix = 'LoggingMiddleware'
     this.logger = logger
   }
@@ -66,5 +65,8 @@ class LoggingMiddleware {
   }
 }
 
-const loggingMiddleware = new LoggingMiddleware()
-export default loggingMiddleware.middleware()
+// Factory function that creates middleware with logger dependency
+export default function createLoggingMiddleware(logger) {
+  const loggingMiddleware = new LoggingMiddleware(logger)
+  return loggingMiddleware.middleware()
+}

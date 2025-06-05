@@ -1,7 +1,5 @@
-import logger from '../config/logger.js'
-
 class ErrorHandler {
-  constructor() {
+  constructor(logger) {
     this.logPrefix = 'ErrorHandler'
     this.logger = logger
   }
@@ -126,7 +124,8 @@ class ErrorHandler {
   }
 }
 
-const errorHandler = new ErrorHandler()
-
-export default errorHandler.middleware()
-export { errorHandler }
+// Factory function that creates error handler with logger dependency
+export default function createErrorHandler(logger) {
+  const errorHandler = new ErrorHandler(logger)
+  return errorHandler.middleware()
+}

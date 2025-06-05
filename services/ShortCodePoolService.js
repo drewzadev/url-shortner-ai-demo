@@ -1,22 +1,21 @@
 import __ from '../libs/attempt.mjs'
-import logger from '../config/logger.js'
 import ShortCodeService from './ShortCodeService.js'
-import RedisService from './RedisService.js'
-import databaseService from '../config/database.js'
+import { appConfig } from '../config/app.js'
 
 class ShortCodePoolService {
-  constructor() {
+  constructor(database, redis, logger) {
     this.logPrefix = 'ShortCodePoolService'
     this.logger = logger
+    this.database = database
+    this.redis = redis
     
-    this.shortCodeService = new ShortCodeService()
-    this.redisService = new RedisService()
+    this.shortCodeService = new ShortCodeService(logger)
     
-    // Configuration from environment
-    this.poolSize = parseInt(process.env.SHORT_CODE_POOL_SIZE) || 1000000
-    this.minPoolSize = parseInt(process.env.SHORT_CODE_POOL_MIN_SIZE) || 10000
-    this.replenishThreshold = parseInt(process.env.SHORT_CODE_REPLENISH_THRESHOLD) || 5000
-    this.batchSize = parseInt(process.env.SHORT_CODE_GENERATION_BATCH_SIZE) || 50000
+    // Configuration from centralized config
+    this.poolSize = appConfig.shortCode.poolSize
+    this.minPoolSize = appConfig.shortCode.minPoolSize
+    this.replenishThreshold = appConfig.shortCode.replenishThreshold
+    this.batchSize = appConfig.shortCode.batchSize
     
     this.isInitialized = false
     this.isReplenishing = false
@@ -38,8 +37,8 @@ class ShortCodePoolService {
     this.logger.info(this.logPrefix, 'Initializing short code pool service...')
     
     // Ensure Redis is connected
-    if (!this.redisService.isConnected) {
-      const [connectError] = await __(this.redisService.connect())
+    if (!this.redis.isConnected) {
+      const [connectError] = await __(this.redis.connect())
       if (connectError) {
         this.logger.error(this.logPrefix, 'Failed to connect to Redis for pool initialization', connectError)
         throw connectError
@@ -68,16 +67,16 @@ class ShortCodePoolService {
   }
 
   async getCurrentPoolSize() {
-    return await this.redisService.getPoolSize()
+    return await this.redis.getPoolSize()
   }
 
   async getUsedShortCodes() {
-    if (!databaseService.isConnected) {
+    if (!this.database.isConnected) {
       this.logger.warn(this.logPrefix, 'Database not connected, cannot retrieve used codes')
       return []
     }
 
-    const [error, urls] = await __(databaseService.getClient().url.findMany({
+    const [error, urls] = await __(this.database.getClient().url.findMany({
       select: { shortCode: true }
     }))
 
@@ -109,7 +108,7 @@ class ShortCodePoolService {
     }
 
     // Remove used codes from pool
-    const [removeError, removedCount] = await __(this.redisService.removeCodesFromPool(usedCodes))
+    const [removeError, removedCount] = await __(this.redis.removeCodesFromPool(usedCodes))
     if (removeError) {
       this.logger.error(this.logPrefix, 'Failed to remove used codes from pool', removeError)
       throw removeError
@@ -185,7 +184,7 @@ class ShortCodePoolService {
     })
 
     // Add codes to Redis pool
-    const [addError] = await __(this.redisService.populateShortCodePool(newCodes))
+    const [addError] = await __(this.redis.populateShortCodePool(newCodes))
     if (addError) {
       this.logger.error(this.logPrefix, 'Failed to add codes to Redis pool', addError)
       throw addError
@@ -272,7 +271,7 @@ class ShortCodePoolService {
   }
 
   async getPoolStatistics() {
-    const [redisStatsError, redisStats] = await __(this.redisService.getPoolStatistics())
+    const [redisStatsError, redisStats] = await __(this.redis.getPoolStatistics())
     const [usedCodesError, usedCodes] = await __(this.getUsedShortCodes())
     
     const codeSpaceStats = this.shortCodeService.getCodeSpaceStatistics(
@@ -282,7 +281,7 @@ class ShortCodePoolService {
     return {
       redis: redisStatsError ? { connected: false, error: redisStatsError.message } : redisStats,
       database: {
-        connected: databaseService.isConnected,
+        connected: this.database.isConnected,
         usedCodesCount: usedCodesError ? 0 : usedCodes.length,
         error: usedCodesError ? usedCodesError.message : null
       },
@@ -301,7 +300,7 @@ class ShortCodePoolService {
   async clearPool() {
     this.logger.info(this.logPrefix, 'Clearing short code pool...')
     
-    const [error] = await __(this.redisService.clearPool())
+    const [error] = await __(this.redis.clearPool())
     if (error) {
       this.logger.error(this.logPrefix, 'Failed to clear pool', error)
       throw error

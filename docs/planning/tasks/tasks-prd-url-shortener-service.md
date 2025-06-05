@@ -1,41 +1,41 @@
 ## Relevant Files
 
 - `package.json` - Project dependencies and scripts configuration (✅ COMPLETED)
-- `url-shortener.js` - Main Express server entry point (✅ COMPLETED)
+- `url-shortener.js` - Main Express server entry point with dependency injection (✅ COMPLETED)
 - `.env.example` - Environment variables template (✅ COMPLETED)
 - `Dockerfile` - Container deployment configuration (✅ COMPLETED)
-- `config/logger.js` - Winston logger configuration (✅ COMPLETED)
-- `libs/attempt.mjs` - Error handling wrapper utility (already exists)
-- `config/database.js` - Database connection configuration
-- `config/redis.js` - Redis connection configuration
+- `libs/logger.js` - Winston logger factory function (✅ COMPLETED)
+- `libs/attempt.mjs` - Error handling wrapper utility (✅ COMPLETED)
+- `libs/database.js` - Database service class with dependency injection (✅ COMPLETED)
+- `libs/redis.js` - Redis service re-export for libs integration (✅ COMPLETED)
+- `libs/bootstrap.js` - Core services bootstrap utility for dependency injection (✅ COMPLETED)
+- `config/app.js` - Centralized application configuration values (✅ COMPLETED)
 - `prisma/schema.prisma` - Database schema definition (✅ COMPLETED)
 - `prisma/migrations/0001_init/migration.sql` - Initial database migration (✅ COMPLETED)
-- `scripts/seed.js` - Database seeding script (✅ COMPLETED)
+- `scripts/seed.js` - Database seeding script with bootstrap integration (✅ COMPLETED)
 - `scripts/test-db.js` - Database connectivity test script (✅ COMPLETED)
 - `.env` - Environment variables configuration (✅ COMPLETED)
 - `services/UrlService.js` - Core URL shortening business logic
-- `services/ShortCodeService.js` - Short code generation and management
-- `services/RedisService.js` - Redis operations wrapper
+- `services/ShortCodeService.js` - Short code generation with dependency injection (✅ COMPLETED)
+- `services/RedisService.js` - Redis operations wrapper with dependency injection (✅ COMPLETED)
 - `controllers/ApiController.js` - REST API endpoint handlers
 - `controllers/WebController.js` - Web interface route handlers
-- `routes/api.js` - API route definitions
-- `routes/web.js` - Web interface route definitions
+- `routes/api.js` - API route factory functions with dependency injection
+- `routes/web.js` - Web interface route factory functions with dependency injection
 - `jobs/CleanupJob.js` - Background job for URL expiration cleanup
 - `views/layouts/main.ejs` - Main EJS layout template
 - `views/index.ejs` - Home page with URL creation form
 - `views/list.ejs` - URL listing page
 - `public/css/styles.css` - Tailwind CSS styles
-- `middleware/logging.js` - Request logging middleware (✅ COMPLETED)
-- `middleware/errorHandler.js` - Global error handling middleware (✅ COMPLETED)
-- `routes/api.js` - API route definitions stub (✅ COMPLETED)
-- `routes/web.js` - Web interface route definitions stub (✅ COMPLETED)
-- `services/RedisService.js` - Redis operations wrapper (✅ COMPLETED)
-- `services/ShortCodeService.js` - Short code generation with configurable character set (✅ COMPLETED)
-- `services/ShortCodePoolService.js` - Short code pool management and reconciliation (✅ COMPLETED)
-- `utils/ShortCodePoolMonitor.js` - Pool monitoring and health checks (✅ COMPLETED)
+- `middleware/logging.js` - Request logging middleware factory function (✅ COMPLETED)
+- `middleware/errorHandler.js` - Global error handling middleware factory function (✅ COMPLETED)
+- `routes/api.js` - API route factory definitions (✅ COMPLETED)
+- `routes/web.js` - Web interface route factory definitions (✅ COMPLETED)
+- `services/RedisService.js` - Redis operations wrapper with dependency injection (✅ COMPLETED)
+- `services/ShortCodeService.js` - Short code generation with configurable character set and dependency injection (✅ COMPLETED)
+- `services/ShortCodePoolService.js` - Short code pool management with dependency injection (✅ COMPLETED)
+- `utils/ShortCodePoolMonitor.js` - Pool monitoring with dependency injection (✅ COMPLETED)
 - `scripts/test-shortcode-pool.js` - Short code pool testing script (✅ COMPLETED)
-- `config/database.js` - Database connection configuration (✅ COMPLETED)
-- `config/redis.js` - Redis connection configuration (✅ COMPLETED)
 - `utils/validators.js` - URL validation utilities
 - `test/services/UrlService.test.js` - Unit tests for URL service
 - `test/services/ShortCodeService.test.js` - Unit tests for short code service
@@ -45,19 +45,25 @@
 - `test/integration/web.test.js` - Integration tests for web interface
 
 ### Directory Structure Created
-- `config/` - Configuration files
-- `services/` - Business logic services
+- `config/` - Configuration values and settings
+- `libs/` - Core infrastructure services (logger, database, redis, bootstrap utility)
+- `services/` - Business logic services with dependency injection
 - `controllers/` - Route controllers
-- `routes/` - Route definitions
+- `routes/` - Route factory functions
 - `views/` and `views/layouts/` - EJS templates
 - `public/css/` - Static CSS files
-- `middleware/` - Express middleware
-- `utils/` - Utility functions
+- `middleware/` - Express middleware factory functions
+- `utils/` - Utility functions with dependency injection
 - `jobs/` - Background jobs
 - `test/` with subdirectories - Test files
 
 ### Notes
 
+- **Dependency Injection**: All services accept dependencies through constructor parameters for better testability
+- **Core Services**: Logger, database, and Redis are created once via `libs/bootstrap.js` and injected into other services
+- **Configuration**: Centralized in `config/app.js` instead of scattered environment variable access
+- **Factory Pattern**: Routes and middleware are factory functions that accept dependencies
+- **Single Connections**: One database connection and one Redis connection managed by the bootstrap utility
 - Unit tests should be placed in the `test/` directory with corresponding folder structure
 - Use `npm test` to run all tests via Mocha
 - Use `npm run lint` to run StandardJS linting
@@ -108,6 +114,19 @@
   - [x] 3.8 Implement pool statistics and health monitoring
   - [x] 3.9 Create startup process to initialize/reconcile short code pool
   - [x] 3.10 Test short code generation and Redis pool operations
+  - [x] 3.11 Core Architecture Refactoring - Dependency Injection (added during implementation)
+    - [x] 3.11.1 Move logger, database, and redis modules from config/ to libs/ folder
+    - [x] 3.11.2 Create libs/bootstrap.js utility for single service initialization
+    - [x] 3.11.3 Create config/app.js for centralized configuration values
+    - [x] 3.11.4 Refactor logger.js to be a factory function instead of singleton
+    - [x] 3.11.5 Refactor DatabaseService to accept logger as dependency
+    - [x] 3.11.6 Refactor RedisService to accept logger as dependency and use config values
+    - [x] 3.11.7 Refactor ShortCodeService to accept logger as dependency
+    - [x] 3.11.8 Refactor ShortCodePoolService to accept database, redis, and logger dependencies
+    - [x] 3.11.9 Refactor ShortCodePoolMonitor to accept redis and logger dependencies
+    - [x] 3.11.10 Update url-shortener.js to use dependency injection pattern with fail-fast startup
+    - [x] 3.11.11 Update scripts/seed.js to use bootstrap utility
+    - [x] 3.11.12 Update documentation to reflect new architecture
 - [ ] 4.0 Core API Development
 - [ ] 5.0 Web Interface Development
 - [ ] 6.0 Background Job System

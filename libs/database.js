@@ -1,9 +1,9 @@
 import { PrismaClient } from '@prisma/client'
-import __ from '../libs/attempt.mjs'
-import logger from './logger.js'
+import __ from './attempt.mjs'
+import { appConfig } from '../config/app.js'
 
-class DatabaseService {
-  constructor() {
+export class DatabaseService {
+  constructor(logger) {
     this.prisma = null
     this.isConnected = false
     this.logPrefix = 'DatabaseService'
@@ -45,11 +45,11 @@ class DatabaseService {
 
   async _createConnection() {
     const connectionConfig = {
-      connectionLimit: parseInt(process.env.DB_CONNECTION_POOL_MAX) || 10,
-      poolTimeout: parseInt(process.env.DB_POOL_TIMEOUT_MS) || 10000,
-      connectTimeout: parseInt(process.env.DB_CONNECT_TIMEOUT_MS) || 5000,
-      socketTimeout: parseInt(process.env.DB_SOCKET_TIMEOUT_MS) || 30000,
-      idleTimeout: parseInt(process.env.DB_IDLE_TIMEOUT_MS) || 300000
+      connectionLimit: appConfig.database.connectionPoolMax,
+      poolTimeout: appConfig.database.poolTimeout,
+      connectTimeout: appConfig.database.connectTimeout,
+      socketTimeout: appConfig.database.socketTimeout,
+      idleTimeout: appConfig.database.idleTimeout
     }
 
     this.logger.debug(this.logPrefix, 'Creating database connection with config', connectionConfig)
@@ -148,12 +148,3 @@ class DatabaseService {
     return this.prisma
   }
 }
-
-// Create singleton instance
-const databaseService = new DatabaseService()
-
-// Database service is initialized manually by the server
-// No auto-initialization to prevent blocking startup
-
-export default databaseService
-export { DatabaseService }

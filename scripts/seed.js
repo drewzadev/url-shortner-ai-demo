@@ -1,9 +1,7 @@
-import { PrismaClient } from '@prisma/client'
 import moment from 'moment'
 import __ from '../libs/attempt.mjs'
-import logger from '../config/logger.js'
+import { createCoreServices, shutdownCoreServices } from '../libs/bootstrap.js'
 
-const prisma = new PrismaClient()
 const logPrefix = 'DatabaseSeeder'
 
 const sampleUrls = [
@@ -63,7 +61,7 @@ async function generateExpirationDate(monthsFromNow = 6) {
   return moment().add(monthsFromNow, 'months').toDate()
 }
 
-async function clearExistingData() {
+async function clearExistingData(prisma, logger) {
   logger.info(logPrefix, 'Clearing existing seed data...')
   
   const [deleteError] = await __(prisma.url.deleteMany({
@@ -82,7 +80,7 @@ async function clearExistingData() {
   logger.info(logPrefix, 'Existing seed data cleared')
 }
 
-async function seedUrls() {
+async function seedUrls(prisma, logger) {
   logger.info(logPrefix, 'Seeding URLs...')
   
   for (const urlData of sampleUrls) {
@@ -110,7 +108,7 @@ async function seedUrls() {
   logger.info(logPrefix, `Successfully seeded ${sampleUrls.length} URLs`)
 }
 
-async function createExpiredUrl() {
+async function createExpiredUrl(prisma, logger) {
   logger.info(logPrefix, 'Creating expired URL for testing...')
   
   const expiredUrl = {
@@ -132,7 +130,7 @@ async function createExpiredUrl() {
   logger.info(logPrefix, 'Created expired URL for testing')
 }
 
-async function printSeedSummary() {
+async function printSeedSummary(prisma, logger) {
   const [countError, totalUrls] = await __(prisma.url.count())
   
   if (countError) {
@@ -161,51 +159,47 @@ async function printSeedSummary() {
 }
 
 async function main() {
+  let services
+  
   try {
+    // Initialize core services
+    services = await createCoreServices()
+    const { logger, database, redis } = services
+    
     logger.info(logPrefix, 'Starting database seeding...')
     
-    // Connect to database
-    const [connectError] = await __(prisma.$connect())
-    if (connectError) {
-      logger.error(logPrefix, 'Failed to connect to database:', connectError)
-      throw connectError
-    }
+    // Use database service instead of direct Prisma client
+    const prisma = database.getClient()
     
     // Clear existing seed data
-    await clearExistingData()
+    await clearExistingData(prisma, logger)
     
     // Seed new data
-    await seedUrls()
-    await createExpiredUrl()
+    await seedUrls(prisma, logger)
+    await createExpiredUrl(prisma, logger)
     
     // Print summary
-    await printSeedSummary()
+    await printSeedSummary(prisma, logger)
     
     logger.info(logPrefix, 'Database seeding completed successfully!')
     
   } catch (error) {
-    logger.error(logPrefix, 'Database seeding failed:', error)
+    if (services && services.logger) {
+      services.logger.error(logPrefix, 'Database seeding failed:', error)
+    } else {
+      console.error('Database seeding failed:', error)
+    }
     process.exit(1)
   } finally {
-    const [disconnectError] = await __(prisma.$disconnect())
-    if (disconnectError) {
-      logger.error(logPrefix, 'Error disconnecting from database:', disconnectError)
+    if (services) {
+      await shutdownCoreServices(services)
     }
   }
 }
 
-// Handle process signals
-process.on('SIGINT', async () => {
-  logger.info(logPrefix, 'Received SIGINT, cleaning up...')
-  await prisma.$disconnect()
-  process.exit(0)
-})
-
-process.on('SIGTERM', async () => {
-  logger.info(logPrefix, 'Received SIGTERM, cleaning up...')
-  await prisma.$disconnect()
-  process.exit(0)
-})
-
 // Run the seeder
-main()
+const [seedError] = await __(main())
+if (seedError) {
+  console.error('Seeding failed:', seedError)
+  process.exit(1)
+}

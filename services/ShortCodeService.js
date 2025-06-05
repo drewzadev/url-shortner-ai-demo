@@ -1,16 +1,16 @@
 import __ from '../libs/attempt.mjs'
-import logger from '../config/logger.js'
+import { appConfig } from '../config/app.js'
 
 class ShortCodeService {
-  constructor() {
+  constructor(logger) {
     this.logPrefix = 'ShortCodeService'
     this.logger = logger
     
-    // Load configuration from environment
-    this.charset = process.env.SHORT_CODE_CHARSET || 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    this.length = parseInt(process.env.SHORT_CODE_LENGTH) || 5
-    this.poolSize = parseInt(process.env.SHORT_CODE_POOL_SIZE) || 1000000
-    this.batchSize = parseInt(process.env.SHORT_CODE_GENERATION_BATCH_SIZE) || 50000
+    // Load configuration from centralized config
+    this.charset = appConfig.shortCode.charset
+    this.length = appConfig.shortCode.length
+    this.poolSize = appConfig.shortCode.poolSize
+    this.batchSize = appConfig.shortCode.batchSize
     
     this.logger.info(this.logPrefix, 'Initialized with configuration', {
       charsetLength: this.charset.length,

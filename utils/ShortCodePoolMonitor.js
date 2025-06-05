@@ -1,19 +1,18 @@
 import __ from '../libs/attempt.mjs'
-import logger from '../config/logger.js'
-import ShortCodePoolService from '../services/ShortCodePoolService.js'
-import RedisService from '../services/RedisService.js'
+import { appConfig } from '../config/app.js'
 
 class ShortCodePoolMonitor {
-  constructor() {
+  constructor(redis, logger) {
     this.logPrefix = 'ShortCodePoolMonitor'
     this.logger = logger
+    this.redis = redis
     
-    this.poolService = new ShortCodePoolService()
-    this.redisService = new RedisService()
+    // Note: We'll get poolService injected later or create it with dependencies
+    this.poolService = null
     
-    // Configuration
+    // Configuration from centralized config
     this.monitoringInterval = parseInt(process.env.POOL_MONITORING_INTERVAL_MS) || 60000 // 1 minute
-    this.replenishThreshold = parseInt(process.env.SHORT_CODE_REPLENISH_THRESHOLD) || 5000
+    this.replenishThreshold = appConfig.shortCode.replenishThreshold
     this.criticalThreshold = parseInt(process.env.SHORT_CODE_CRITICAL_THRESHOLD) || 1000
     
     this.monitoringTimer = null
@@ -33,6 +32,11 @@ class ShortCodePoolMonitor {
       replenishThreshold: this.replenishThreshold,
       criticalThreshold: this.criticalThreshold
     })
+  }
+
+  // Set the pool service after it's created with proper dependencies
+  setPoolService(poolService) {
+    this.poolService = poolService
   }
 
   async startMonitoring() {
@@ -265,7 +269,7 @@ class ShortCodePoolMonitor {
   }
 
   async checkPoolLevel() {
-    const [sizeError, poolSize] = await __(this.redisService.getPoolSize())
+    const [sizeError, poolSize] = await __(this.redis.getPoolSize())
     
     if (sizeError) {
       return {
